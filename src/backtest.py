@@ -3,7 +3,7 @@ import os
 if 'TERM' not in os.environ:
     os.environ['TERM'] = 'xterm-256color'
 
-from src.backtester import Backtester
+from src.backtester.backtester import Backtester
 from src.graph import run_hedge_fund
 
 
