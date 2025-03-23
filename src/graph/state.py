@@ -1,5 +1,4 @@
 from typing_extensions import Annotated, Sequence, TypedDict
-
 import operator
 from langchain_core.messages import BaseMessage
 

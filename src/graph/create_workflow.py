@@ -5,10 +5,9 @@ from colorama import Fore, Back, Style, init
 from src.graph.state import AgentState
 from typing import Optional, List
 from src.utils.progress import progress
-from src.utils.analysts import get_analyst_nodes
 from src.agents.portfolio_manager import portfolio_management_agent
 from src.agents.risk_manager import risk_management_agent
-# from src.agents.technicals import technical_analyst_agent
+from src.utils import get_analyst_nodes
 
 
 init(autoreset=True)

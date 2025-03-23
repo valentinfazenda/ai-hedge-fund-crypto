@@ -79,7 +79,7 @@ class PortfolioManagerOutput(BaseModel):
 
 
 ##### Portfolio Management Agent #####
-def portfolio_management_agent(state: AgentState):
+def portfolio_management_agent(state: AgentState) -> AgentState:
     """Makes final trading decisions and generates orders for multiple tickers"""
     data = state['data']
     print(f"portfolio_management_agent data is {type(data)}")

@@ -1,8 +1,20 @@
 from src.backtester import Backtester
 from src.graph import run_hedge_fund
+import os
 
 
 if __name__ == '__main__':
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    # from binance.client import Client
+    # _binance_client = Client()
+    # data = _binance_client.get_historical_klines(symbol='BTCUSDT', interval=Client.KLINE_INTERVAL_15MINUTE,
+    #                                              start_str='2025-1-1', end_str='2025-2-1')
+    #
+    # print(data, len(data))
+    #
+    # exit()
 
     backtester = Backtester(
         agent=run_hedge_fund,

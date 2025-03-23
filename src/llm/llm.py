@@ -39,7 +39,7 @@ def call_llm(
     from src.llm.models import get_model, get_model_info
     
     model_info = get_model_info(model_name)
-    llm: ChatOpenAI = get_model(model_name, model_provider)
+    llm = get_model(model_name, model_provider)
 
     # For non-JSON support models, we can use structured output
     print(model_name, model_info.has_json_mode())

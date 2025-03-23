@@ -6,7 +6,8 @@ import json
 
 
 # Risk Management Agent
-def risk_management_agent(state: AgentState):
+def risk_management_agent(state: AgentState) -> AgentState:
+
     """Controls position sizing based on real-world risk factors for multiple tickers."""
     data = state['data']
     portfolio = data["portfolio"]
