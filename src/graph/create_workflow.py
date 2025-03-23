@@ -9,8 +9,9 @@ from src.agents.portfolio_manager import portfolio_management_agent
 from src.agents.risk_manager import risk_management_agent
 from src.utils import get_analyst_nodes
 
-
+# Initialize colorama safely with fallback options
 init(autoreset=True)
+
 
 def start(state: AgentState):
     """Initialize the workflow with the input message."""

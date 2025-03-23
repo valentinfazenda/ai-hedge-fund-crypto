@@ -229,8 +229,12 @@ def print_trading_output(result: dict) -> None:
 
 def print_backtest_results(table_rows: list) -> None:
     """Print the backtest results in a nicely formatted table"""
-    # Clear the screen
-    os.system("cls" if os.name == "nt" else "clear")
+    # Try to clear the screen, but handle case when TERM is not set
+    try:
+        os.system("cls" if os.name == "nt" else "clear")
+    except Exception:
+        # Just print a separator if clearing screen fails
+        print("\n" + "="*80 + "\n")
 
     # Split rows into ticker rows and summary rows
     ticker_rows = []
@@ -357,9 +361,9 @@ def format_backtest_row(
             date,
             f"{Fore.CYAN}{ticker}{Style.RESET_ALL}",
             f"{action_color}{action.upper()}{Style.RESET_ALL}",
-            f"{action_color}{quantity:,.0f}{Style.RESET_ALL}",
+            f"{action_color}{quantity:,.2f}{Style.RESET_ALL}",
             f"{Fore.WHITE}{price:,.2f}{Style.RESET_ALL}",
-            f"{Fore.WHITE}{shares_owned:,.0f}{Style.RESET_ALL}",
+            f"{Fore.WHITE}{shares_owned:,.2f}{Style.RESET_ALL}",
             f"{Fore.YELLOW}{position_value:,.2f}{Style.RESET_ALL}",
             f"{Fore.GREEN}{bullish_count}{Style.RESET_ALL}",
             f"{Fore.RED}{bearish_count}{Style.RESET_ALL}",

@@ -1,9 +1,14 @@
+import os
+# Set TERM environment variable if not already set
+if 'TERM' not in os.environ:
+    os.environ['TERM'] = 'xterm-256color'
+
 from src.backtester import Backtester
 from src.graph import run_hedge_fund
-import os
 
 
 if __name__ == '__main__':
+    os.environ["TERM"] = "xterm"
     from dotenv import load_dotenv
     load_dotenv()
 

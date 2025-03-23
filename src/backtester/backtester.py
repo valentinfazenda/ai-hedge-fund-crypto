@@ -12,6 +12,8 @@ from typing_extensions import Callable
 from typing import Optional, List
 from src.api.binance_api import get_prices,get_price_data
 
+# Initialize colorama safely
+init(autoreset=True)
 
 class Backtester:
     def __init__(
@@ -56,8 +58,8 @@ class Backtester:
             "margin_used": 0.0,  # total margin usage across all short positions
             "positions": {
                 ticker: {
-                    "long": 0,  # Number of shares held long
-                    "short": 0,  # Number of shares held short
+                    "long": 0.0,  # Number of shares held long
+                    "short": 0.0,  # Number of shares held short
                     "long_cost_basis": 0.0,  # Average cost basis per share (long)
                     "short_cost_basis": 0.0,  # Average cost basis per share (short)
                     "short_margin_used": 0.0  # Dollars of margin used for this ticker's short
@@ -75,12 +77,14 @@ class Backtester:
         """
         Execute trades with support for both long and short positions.
         `quantity` is the number of shares the agent wants to buy/sell/short/cover.
-        We will only trade integer shares to keep it simple.
+        We support fractional shares for more precise position sizing.
         """
         if quantity <= 0:
             return 0
 
-        quantity = int(quantity)  # force integer shares
+        # Ensure quantity is a float to allow fractional shares
+        quantity = float(quantity)
+            
         position = self.portfolio["positions"][ticker]
 
         if action == "buy":
@@ -102,7 +106,7 @@ class Backtester:
                 return quantity
             else:
                 # Calculate maximum affordable quantity
-                max_quantity = int(self.portfolio["cash"] / current_price)
+                max_quantity = float(self.portfolio["cash"] / current_price)
                 if max_quantity > 0:
                     cost = max_quantity * current_price
                     old_shares = position["long"]
@@ -170,7 +174,7 @@ class Backtester:
             else:
                 # Calculate maximum shortable quantity
                 if self.margin_ratio > 0:
-                    max_quantity = int(self.portfolio["cash"] / (current_price * self.margin_ratio))
+                    max_quantity = float(self.portfolio["cash"] / (current_price * self.margin_ratio))
                 else:
                     max_quantity = 0
 
@@ -287,7 +291,7 @@ class Backtester:
         # Pre-fetch all data at the start
         self.prefetch_data()
 
-        dates = pd.date_range(self.start_date, self.end_date, freq="B")
+        dates = pd.date_range(self.start_date, self.end_date, freq="D") # set to Day.
         table_rows = []
         performance_metrics = {
             'sharpe_ratio': None,
@@ -539,14 +543,15 @@ class Backtester:
         plt.show()
 
         # Compute daily returns
+        # the annual risk-free rate (4.34%) by 365 to get the daily risk-free rate:
         performance_df["Daily Return"] = performance_df["Portfolio Value"].pct_change().fillna(0)
-        daily_rf = 0.0434 / 252  # daily risk-free rate
+        daily_rf = 0.0434 / 365  # daily risk-free rate
         mean_daily_return = performance_df["Daily Return"].mean()
         std_daily_return = performance_df["Daily Return"].std()
 
         # Annualized Sharpe Ratio
         if std_daily_return != 0:
-            annualized_sharpe = np.sqrt(252) * ((mean_daily_return - daily_rf) / std_daily_return)
+            annualized_sharpe = np.sqrt(365) * ((mean_daily_return - daily_rf) / std_daily_return)
         else:
             annualized_sharpe = 0
         print(f"\nSharpe Ratio: {Fore.YELLOW}{annualized_sharpe:.2f}{Style.RESET_ALL}")
