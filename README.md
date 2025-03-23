@@ -1,4 +1,4 @@
-# AI Hedge Fund
+# AI Hedge Fund crypto
 
 This is a proof of concept for an AI-powered hedge fund.  The goal of this project is to explore the use of AI to make trading decisions.  This project is for **educational** purposes only and is not intended for real trading or investment.
 
@@ -115,7 +115,7 @@ poetry run python src/main.py --ticker AAPL,MSFT,NVDA --start-date 2024-01-01 --
 ### Running the Backtester
 
 ```bash
-poetry run python src/backtester.py --ticker AAPL,MSFT,NVDA
+poetry run python src/backtest.py --ticker AAPL,MSFT,NVDA
 ```
 
 **Example Output:**
@@ -124,7 +124,7 @@ poetry run python src/backtester.py --ticker AAPL,MSFT,NVDA
 You can optionally specify the start and end dates to backtest over a specific time period.
 
 ```bash
-poetry run python src/backtester.py --ticker AAPL,MSFT,NVDA --start-date 2024-01-01 --end-date 2024-03-01
+poetry run python src/backtest.py --ticker AAPL,MSFT,NVDA --start-date 2024-01-01 --end-date 2024-03-01
 ```
 
 ## Project Structure 
