@@ -26,7 +26,7 @@ This project is for **educational and research purposes only**.
 
 By using this software, you agree to use it solely for learning purposes.
 
-![Cryptocurrency Trading](img/img.png)
+![Cryptocurrency Trading](imgs/img.png)
 
 ## Table of Contents
 - [Setup](#setup)
