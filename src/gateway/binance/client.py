@@ -13722,7 +13722,7 @@ class Client(BaseClient):
                 "data": [
                     {
                         "day": "2023-06-30",
-                        "url": "https://bin-prod-user-rebate-bucket.s3.ap-northeast-1.amazonaws.com/"
+                        "url": "https://bin-prod-user-rebate-bucket.s3.ap-northeast-1.amazonaws.com/future-data-symbol-update/"
                     }
                 ]
             }
