@@ -1,7 +1,7 @@
 
 from datetime import datetime
 import pandas as pd
-from binance.client import Client
+from src.gateway.binance.client import Client
 
 
 from src.data.cache import get_cache

@@ -3039,26 +3039,6 @@ tomli = {version = ">=1.0.0", markers = "python_version < \"3.11\""}
 testing = ["argcomplete", "attrs (>=19.2.0)", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "setuptools", "xmlschema"]
 
 [[package]]
-name = "python-binance"
-version = "1.0.28"
-description = "Binance REST API python implementation"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "python_binance-1.0.28-py2.py3-none-any.whl", hash = "sha256:fad6ef1826a8239f0ab1bf60424103c4b65b98c28f36cf84c3992f0d841cadd8"},
-    {file = "python_binance-1.0.28.tar.gz", hash = "sha256:23872403a66fbe508fb194c58f5d6378837acc23bc1ccbb5df36247241778c9e"},
-]
-
-[package.dependencies]
-aiohttp = "*"
-dateparser = "*"
-pycryptodome = "*"
-requests = "*"
-six = "*"
-websockets = "*"
-
-[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 description = "Extensions to the standard Python datetime module"
@@ -3891,4 +3871,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "8d66eb1f54a44732ac07e723cc2806b010606ad3c805db4ac49d01ee2efafd55"
+content-hash = "5dcf226281b983eac785119b048761fa3a0a83481bf5c3c9c2e347a1d314cc16"
