@@ -186,7 +186,7 @@ class BinanceDataProvider:
             self,
             symbol: str,
             timeframe: str,
-            end_time: str,
+            end_time: datetime,
             limit: int = 500,
     ) -> pd.DataFrame:
         """
@@ -195,7 +195,7 @@ class BinanceDataProvider:
         Args:
             symbol: Trading symbol (e.g., 'BTCUSDT')
             timeframe: time interval (e.g., '1h', '5m', '1d')
-            end_time: end time for multiple timeframes
+            end_time: end time for timeframes data
             limit: Maximum number of timeframes to fetch
         Returns:
             Dictionary of DataFrames for each timeframe
@@ -206,7 +206,7 @@ class BinanceDataProvider:
             klines = self.client.futures_historical_klines_with_end_time(
                 symbol=formatted_symbol,
                 interval=self._format_timeframe(timeframe),
-                end_str=end_time,
+                end_str=end_time.strftime("%Y-%m-%d %H:%M:%S"),
                 limit=limit
             )
 

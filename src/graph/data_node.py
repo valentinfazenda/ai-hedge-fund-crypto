@@ -29,7 +29,17 @@ class DataNode(Node):
         Returns:
             Updated state with timeframes data
         """
-        data = state['data']
+        data = state.get('data', {})
         data['name'] = "DataNode"
-        return state
+        timeframe: str = self.interval.value
+        tickers = data.get('tickers', [])
+        end_time = data.get('end_date', datetime.now()) + timedelta(milliseconds=500)
 
+        for ticker in tickers:
+            df = data_provider.get_history_klines_with_end_time(symbol=ticker, timeframe=timeframe, end_time=end_time)
+            if df is not None and not df.empty:
+                data[f"{ticker}_{timeframe}"] = df
+            else:
+                print(f"[Warning] No data returned for {ticker} at interval {timeframe}")
+
+        return state
