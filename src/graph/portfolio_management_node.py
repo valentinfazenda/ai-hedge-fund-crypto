@@ -72,7 +72,7 @@ class PortfolioManagementNode(BaseNode):
 
         # Print the decision if the flag is set
         if state["metadata"]["show_reasoning"]:
-            show_agent_reasoning({ticker: decision.model_dump() for ticker, decision in result.decisions.items()},
+            show_agent_reasoning(result.get("decisions"),
                                  "Portfolio Management Agent")
 
         return {
@@ -183,5 +183,5 @@ def generate_trading_decision(
             "total_margin_used": f"{portfolio.get('margin_used', 0.0):.2f}",
         }
     )
-    print("the return result :", result)
+    # print("the return result :", result)
     return result

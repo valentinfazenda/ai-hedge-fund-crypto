@@ -34,7 +34,7 @@ if __name__ == "__main__":
     }
 
     # print(INTERVAL_MAP.get(settings.primary_interval))
-    Agent.run(
+    result = Agent.run(
         primary_interval=settings.primary_interval,
         intervals=settings.signals.intervals,
         tickers=settings.signals.tickers,
@@ -44,3 +44,4 @@ if __name__ == "__main__":
         show_reasoning=settings.show_reasoning,
         show_agent_graph=settings.show_agent_graph
     )
+    print(result)
