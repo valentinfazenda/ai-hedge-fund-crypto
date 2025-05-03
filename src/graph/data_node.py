@@ -9,13 +9,13 @@ from typing import Dict, Any
 
 from .state import AgentState
 from src.utils import BinanceDataProvider, Interval
-from .node import Node, AgentState
+from .base_node import BaseNode, AgentState
 
 # Initialize data provider
 data_provider = BinanceDataProvider()
 
 
-class DataNode(Node):
+class DataNode(BaseNode):
     def __init__(self, interval: Interval = Interval.DAY_1):
         self.interval = interval
 

@@ -2,10 +2,10 @@
 Merged data node.
 """
 from typing import Dict, Any
-from .node import Node, AgentState
+from .base_node import BaseNode, AgentState
 
 
-class EmptyNode(Node):
+class EmptyNode(BaseNode):
     def __call__(self, state: AgentState) -> Dict[str, Any]:
         """
         EmptyNode

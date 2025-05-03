@@ -1,11 +1,11 @@
 from typing import Dict, Any
 import json
 from langchain_core.messages import HumanMessage
-from src.graph import AgentState, Node, show_agent_reasoning
+from src.graph import AgentState, BaseNode, show_agent_reasoning
 from indicators import *
 
 
-class MacdStrategy(Node):
+class MacdStrategy(BaseNode):
     def __call__(self, state: AgentState) -> Dict[str, Any]:
         """
         Sophisticated technical analysis system that combines multiple trading strategies for multiple tickers:

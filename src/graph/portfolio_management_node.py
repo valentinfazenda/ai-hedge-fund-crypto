@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_openai import ChatOpenAI
-from .node import Node, AgentState
+from .base_node import BaseNode, AgentState
 from graph import show_agent_reasoning
 
 llm = ChatOpenAI(
@@ -16,7 +16,7 @@ llm = ChatOpenAI(
 parser = JsonOutputParser()
 
 
-class PortfolioManagementNode(Node):
+class PortfolioManagementNode(BaseNode):
     def __call__(self, state: AgentState) -> Dict[str, Any]:
         """Makes final trading decisions and generates orders for multiple tickers"""
 

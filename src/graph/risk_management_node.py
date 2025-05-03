@@ -2,11 +2,11 @@ import json
 from typing import Dict, Any, Optional
 from langchain_core.messages import HumanMessage
 from .state import AgentState, show_agent_reasoning
-from .node import Node
+from .base_node import BaseNode
 from utils import Interval
 
 
-class RiskManagementNode(Node):
+class RiskManagementNode(BaseNode):
     def __call__(self, state: AgentState) -> Dict[str, Any]:
         """Controls position sizing based on real-world risk factors for multiple tickers."""
         data = state.get('data', {})

@@ -5,14 +5,14 @@ start node
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
-from .node import Node, AgentState
+from .base_node import BaseNode, AgentState
 from src.utils import BinanceDataProvider
 
 # Initialize data provider
 data_provider = BinanceDataProvider()
 
 
-class StartNode(Node):
+class StartNode(BaseNode):
     """
     start node
     """
