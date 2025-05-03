@@ -34,7 +34,6 @@ if __name__ == "__main__":
     }
 
     # print(INTERVAL_MAP.get(settings.primary_interval))
-
     Agent.run(
         primary_interval=settings.primary_interval,
         intervals=settings.signals.intervals,

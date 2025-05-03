@@ -10,6 +10,7 @@ dependencies = [
     "dateparser>=1.2.1",
     "dotenv>=0.9.9",
     "langchain>=0.3.24",
+    "langchain-openai>=0.3.16",
     "langgraph>=0.4.1",
     "matplotlib>=3.10.1",
     "pandas>=2.2.3",

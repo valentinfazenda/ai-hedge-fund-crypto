@@ -1,11 +1,13 @@
+import os
 from pydantic_settings import BaseSettings
+from pydantic import model_validator, BaseModel
 from datetime import datetime
 import yaml
-from pydantic import BaseModel
 from typing import List
-
+from dotenv import load_dotenv
 from .constants import Interval
 
+load_dotenv()
 
 class SignalSettings(BaseModel):
     intervals: List[Interval]
@@ -23,6 +25,13 @@ class Settings(BaseSettings):
     show_reasoning: bool
     show_agent_graph: bool = True
     signals: SignalSettings
+
+    @model_validator(mode='after')
+    def check_primary_interval_in_intervals(self):
+        if self.primary_interval not in self.signals.intervals:
+            raise ValueError(
+                f"primary_interval '{self.primary_interval}' must be in signals.intervals {self.signals.intervals}")
+        return self
 
 
 def load_settings(yaml_path: str = "config.yaml") -> Settings:

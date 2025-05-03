@@ -10,12 +10,12 @@ class Agent:
 
     @staticmethod
     def run(
+            primary_interval: Interval,
             intervals: List[Interval],
             tickers: List[str],
             end_date: str,
             portfolio: Dict,
             strategies: List[str],
-            primary_interval: Interval = Interval.DAY_1,
             show_reasoning: bool = False,
             show_agent_graph: bool = False,
             model_name: str = "gpt-4o",
@@ -53,6 +53,8 @@ class Agent:
                     )
                 ],
                 "data": {
+                    "primary_interval": primary_interval,
+                    "intervals": intervals,
                     "tickers": tickers,
                     "portfolio": portfolio,
                     "end_date": end_date,
@@ -65,12 +67,8 @@ class Agent:
                 },
             },
         )
-
-        # print(final_state)
-        # except Exception as e:
-        #     print(e.__str__())
-        #     pass
-        # return {
-        #     "decisions": parse_hedge_fund_response(final_state["messages"][-1].content),
-        #     "analyst_signals": final_state["data"]["analyst_signals"],
-        # }
+        # print("the final state:", final_state["data"]["analyst_signals"])
+        return {
+            "decisions": final_state["messages"][-1].content,
+            "analyst_signals": final_state["data"]["analyst_signals"],
+        }

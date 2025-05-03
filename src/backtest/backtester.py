@@ -325,6 +325,7 @@ class Backtester:
             # 1) Execute the agent's trades
             # ---------------------------------------------------------------
             output = Agent.run(
+                primary_interval=self.primary_interval,
                 intervals=self.intervals,
                 tickers=self.tickers,
                 end_date=current_time,
