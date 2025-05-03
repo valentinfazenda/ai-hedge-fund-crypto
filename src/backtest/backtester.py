@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 from colorama import Fore, Style, init
-from utils import Interval
+from utils import Interval, QUANTITY_DECIMALS, format_backtest_row, print_backtest_results
 from agent import Agent
 from utils.binance_data_provider import BinanceDataProvider
 import matplotlib.pyplot as plt
@@ -86,10 +86,10 @@ class Backtester:
         `quantity` is the number of shares the agent wants to buy/sell/short/cover.
         We will only trade integer shares to keep it simple.
         """
-        if quantity <= 0:
-            return 0
+        if quantity <= 0.0:
+            return 0.0
 
-        quantity = int(quantity)  # force integer shares
+        quantity = round(float(quantity), QUANTITY_DECIMALS)  # force to keep just 0.001
         position = self.portfolio["positions"][ticker]
 
         if action == "buy":
@@ -101,7 +101,7 @@ class Backtester:
                 new_shares = quantity
                 total_shares = old_shares + new_shares
 
-                if total_shares > 0:
+                if total_shares > 0.0:
                     total_old_cost = old_cost_basis * old_shares
                     total_new_cost = cost
                     position["long_cost_basis"] = (total_old_cost + total_new_cost) / total_shares
@@ -111,14 +111,14 @@ class Backtester:
                 return quantity
             else:
                 # Calculate maximum affordable quantity
-                max_quantity = int(self.portfolio["cash"] / current_price)
-                if max_quantity > 0:
+                max_quantity = round(float(self.portfolio["cash"] / current_price), QUANTITY_DECIMALS)
+                if max_quantity > 0.0:
                     cost = max_quantity * current_price
                     old_shares = position["long"]
                     old_cost_basis = position["long_cost_basis"]
                     total_shares = old_shares + max_quantity
 
-                    if total_shares > 0:
+                    if total_shares > 0.0:
                         total_old_cost = old_cost_basis * old_shares
                         total_new_cost = cost
                         position["long_cost_basis"] = (total_old_cost + total_new_cost) / total_shares
@@ -126,21 +126,21 @@ class Backtester:
                     position["long"] += max_quantity
                     self.portfolio["cash"] -= cost
                     return max_quantity
-                return 0
+                return 0.0
 
         elif action == "sell":
             # You can only sell as many as you own
             quantity = min(quantity, position["long"])
-            if quantity > 0:
+            if quantity > 0.0:
                 # Realized gain/loss using average cost basis
-                avg_cost_per_share = position["long_cost_basis"] if position["long"] > 0 else 0
+                avg_cost_per_share = position["long_cost_basis"] if position["long"] > 0.0 else 0.0
                 realized_gain = (current_price - avg_cost_per_share) * quantity
                 self.portfolio["realized_gains"][ticker]["long"] += realized_gain
 
                 position["long"] -= quantity
                 self.portfolio["cash"] += quantity * current_price
 
-                if position["long"] == 0:
+                if position["long"] == 0.0:
                     position["long_cost_basis"] = 0.0
 
                 return quantity
@@ -161,7 +161,7 @@ class Backtester:
                 new_shares = quantity
                 total_shares = old_short_shares + new_shares
 
-                if total_shares > 0:
+                if total_shares > 0.0:
                     total_old_cost = old_cost_basis * old_short_shares
                     total_new_cost = current_price * new_shares
                     position["short_cost_basis"] = (total_old_cost + total_new_cost) / total_shares
@@ -179,12 +179,12 @@ class Backtester:
             else:
                 # Calculate maximum shortable quantity
                 margin_ratio = self.portfolio["margin_requirement"]
-                if margin_ratio > 0:
+                if margin_ratio > 0.0:
                     max_quantity = int(self.portfolio["cash"] / (current_price * margin_ratio))
                 else:
-                    max_quantity = 0
+                    max_quantity = 0.0
 
-                if max_quantity > 0:
+                if max_quantity > 0.0:
                     proceeds = current_price * max_quantity
                     margin_required = proceeds * margin_ratio
 
@@ -192,7 +192,7 @@ class Backtester:
                     old_cost_basis = position["short_cost_basis"]
                     total_shares = old_short_shares + max_quantity
 
-                    if total_shares > 0:
+                    if total_shares > 0.0:
                         total_old_cost = old_cost_basis * old_short_shares
                         total_new_cost = current_price * max_quantity
                         position["short_cost_basis"] = (total_old_cost + total_new_cost) / total_shares
@@ -204,7 +204,7 @@ class Backtester:
                     self.portfolio["cash"] += proceeds
                     self.portfolio["cash"] -= margin_required
                     return max_quantity
-                return 0
+                return 0.0
 
         elif action == "cover":
             """
@@ -214,12 +214,12 @@ class Backtester:
               3) Net effect on cash = -cover_cost + released_margin
             """
             quantity = min(quantity, position["short"])
-            if quantity > 0:
+            if quantity > 0.0:
                 cover_cost = quantity * current_price
-                avg_short_price = position["short_cost_basis"] if position["short"] > 0 else 0
+                avg_short_price = position["short_cost_basis"] if position["short"] > 0.0 else 0.0
                 realized_gain = (avg_short_price - current_price) * quantity
 
-                if position["short"] > 0:
+                if position["short"] > 0.0:
                     portion = quantity / position["short"]
                 else:
                     portion = 1.0
@@ -236,13 +236,13 @@ class Backtester:
 
                 self.portfolio["realized_gains"][ticker]["short"] += realized_gain
 
-                if position["short"] == 0:
+                if position["short"] == 0.0:
                     position["short_cost_basis"] = 0.0
                     position["short_margin_used"] = 0.0
 
                 return quantity
 
-        return 0
+        return 0.0
 
     def calculate_portfolio_value(self, current_prices):
         """
@@ -262,7 +262,7 @@ class Backtester:
             total_value += long_value
 
             # Short position unrealized PnL = short_shares * (short_cost_basis - current_price)
-            if position["short"] > 0:
+            if position["short"] > 0.0:
                 total_value -= position["short"] * price
 
         return total_value
@@ -336,16 +336,14 @@ class Backtester:
                 show_agent_graph=self.show_agent_graph
             )
 
-            print(f"the output: {output}")
-            continue
-            decisions = output["decisions"]
+            decisions = output.get("decisions")
             analyst_signals = output["analyst_signals"]
 
             # Execute trades for each ticker
             executed_trades = {}
             for ticker in self.tickers:
-                decision = decisions.get(ticker, {"action": "hold", "quantity": 0})
-                action, quantity = decision.get("action", "hold"), decision.get("quantity", 0)
+                decision = decisions.get(ticker, {"action": "hold", "quantity": 0.0})
+                action, quantity = decision.get("action", "hold"), decision.get("quantity", 0.0)
 
                 executed_quantity = self.execute_trade(ticker, action, quantity, current_prices[ticker])
                 executed_trades[ticker] = executed_quantity
@@ -367,7 +365,7 @@ class Backtester:
 
             # Track each day's portfolio value in self.portfolio_values
             self.portfolio_values.append(
-                {"Date": current_date, "Portfolio Value": total_value, "Long Exposure": long_exposure,
+                {"Date": current_time, "Portfolio Value": total_value, "Long Exposure": long_exposure,
                  "Short Exposure": short_exposure, "Gross Exposure": gross_exposure, "Net Exposure": net_exposure,
                  "Long/Short Ratio": long_short_ratio})
 
@@ -395,12 +393,12 @@ class Backtester:
 
                 # Get the action and quantity from the decisions
                 action = decisions.get(ticker, {}).get("action", "hold")
-                quantity = executed_trades.get(ticker, 0)
+                quantity = executed_trades.get(ticker, 0.0)
 
                 # Append the agent action to the table rows
                 date_rows.append(
                     format_backtest_row(
-                        date=current_date_str,
+                        date=current_time,
                         ticker=ticker,
                         action=action,
                         quantity=quantity,
@@ -422,7 +420,7 @@ class Backtester:
             # Add summary row for this day
             date_rows.append(
                 format_backtest_row(
-                    date=current_date_str,
+                    date=current_time,
                     ticker="",
                     action="",
                     quantity=0,
@@ -463,15 +461,15 @@ class Backtester:
         if len(clean_returns) < 2:
             return  # not enough data points
 
-        # Assumes 252 trading days/year
-        daily_risk_free_rate = 0.0434 / 252
+        # Assumes 365 trading days/year
+        daily_risk_free_rate = 0.0434 / 365
         excess_returns = clean_returns - daily_risk_free_rate
         mean_excess_return = excess_returns.mean()
         std_excess_return = excess_returns.std()
 
         # Sharpe ratio
         if std_excess_return > 1e-12:
-            performance_metrics["sharpe_ratio"] = np.sqrt(252) * (mean_excess_return / std_excess_return)
+            performance_metrics["sharpe_ratio"] = np.sqrt(365) * (mean_excess_return / std_excess_return)
         else:
             performance_metrics["sharpe_ratio"] = 0.0
 
@@ -480,7 +478,7 @@ class Backtester:
         if len(negative_returns) > 0:
             downside_std = negative_returns.std()
             if downside_std > 1e-12:
-                performance_metrics["sortino_ratio"] = np.sqrt(252) * (mean_excess_return / downside_std)
+                performance_metrics["sortino_ratio"] = np.sqrt(365) * (mean_excess_return / downside_std)
             else:
                 performance_metrics["sortino_ratio"] = float("inf") if mean_excess_return > 0 else 0
         else:
@@ -539,13 +537,13 @@ class Backtester:
 
         # Compute daily returns
         performance_df["Daily Return"] = performance_df["Portfolio Value"].pct_change().fillna(0)
-        daily_rf = 0.0434 / 252  # daily risk-free rate
+        daily_rf = 0.0434 / 365  # daily risk-free rate
         mean_daily_return = performance_df["Daily Return"].mean()
         std_daily_return = performance_df["Daily Return"].std()
 
         # Annualized Sharpe Ratio
         if std_daily_return != 0:
-            annualized_sharpe = np.sqrt(252) * ((mean_daily_return - daily_rf) / std_daily_return)
+            annualized_sharpe = np.sqrt(365) * ((mean_daily_return - daily_rf) / std_daily_return)
         else:
             annualized_sharpe = 0
         print(f"\nSharpe Ratio: {Fore.YELLOW}{annualized_sharpe:.2f}{Style.RESET_ALL}")

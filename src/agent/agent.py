@@ -1,8 +1,7 @@
 from typing import List, Dict
 from langchain_core.messages import HumanMessage
 
-from utils import Interval
-from utils.util_func import save_graph_as_png
+from utils import Interval, save_graph_as_png, parse_str_to_json
 from .workflow import Workflow
 
 
@@ -69,6 +68,6 @@ class Agent:
         )
         # print("the final state:", final_state["data"]["analyst_signals"])
         return {
-            "decisions": final_state["messages"][-1].content,
+            "decisions": parse_str_to_json(final_state["messages"][-1].content),
             "analyst_signals": final_state["data"]["analyst_signals"],
         }

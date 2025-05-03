@@ -12,6 +12,7 @@ COLUMNS = [
 NUMERIC_COLUMNS = ['open', 'high', 'low', 'close', 'volume', 'quote_volume',
                    'count', 'taker_buy_volume', 'taker_buy_quote_volume']
 
+QUANTITY_DECIMALS = 3
 
 class Interval(Enum):
     MIN_1 = "1m"
