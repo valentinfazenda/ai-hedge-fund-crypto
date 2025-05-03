@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     initial_cash: int
     margin_requirement: float
     show_reasoning: bool
+    show_agent_graph: bool = True
     signals: SignalSettings
 
 
@@ -33,8 +34,8 @@ def load_settings(yaml_path: str = "config.yaml") -> Settings:
 # Load and use
 settings = load_settings()
 
-print(settings.mode)
-print(settings.primary_interval)
-print(settings.start_date)
-print(settings.end_date)
-print(settings.signals)
+# print(settings.mode)
+# print(settings.primary_interval)
+# print(settings.start_date)
+# print(settings.end_date)
+# print(settings.signals)

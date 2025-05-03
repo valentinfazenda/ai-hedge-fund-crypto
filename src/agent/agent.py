@@ -12,19 +12,19 @@ class Agent:
     def run(
             intervals: List[Interval],
             tickers: List[str],
-            start_date: str,
             end_date: str,
             portfolio: Dict,
             strategies: List[str],
             primary_interval: Interval = Interval.DAY_1,
             show_reasoning: bool = False,
+            show_agent_graph: bool = False,
             model_name: str = "gpt-4o",
             model_provider: str = "OpenAI"
     ):
         """
+        :param show_agent_graph:
         :param intervals:
         :param tickers:
-        :param start_date:
         :param end_date:
         :param portfolio:
         :param strategies:
@@ -38,13 +38,12 @@ class Agent:
         workflow = Workflow.create_workflow(intervals=intervals, strategies=strategies)
         agent = workflow.compile()
 
-        if show_reasoning:
+        if show_agent_graph:
             file_path = ""
             for strategy_name in strategies:
                 file_path += strategy_name + "_"
                 file_path += "graph.png"
             save_graph_as_png(agent, file_path)
-            print("save graph")
 
         final_state = agent.invoke(
             {
@@ -56,7 +55,6 @@ class Agent:
                 "data": {
                     "tickers": tickers,
                     "portfolio": portfolio,
-                    "start_date": start_date,
                     "end_date": end_date,
                     "analyst_signals": {},
                 },
@@ -67,6 +65,7 @@ class Agent:
                 },
             },
         )
+
         print(final_state)
         # except Exception as e:
         #     print(e.__str__())

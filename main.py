@@ -39,9 +39,9 @@ if __name__ == "__main__":
         primary_interval=settings.primary_interval,
         intervals=settings.signals.intervals,
         tickers=settings.signals.tickers,
-        start_date=settings.start_date,
         end_date=settings.end_date,
         portfolio=portfolio,
         strategies=settings.signals.strategies,
         show_reasoning=settings.show_reasoning,
+        show_agent_graph=settings.show_agent_graph
     )

@@ -1,5 +1,4 @@
 from typing import Dict, Any
-from .state import AgentState
 from .node import Node, AgentState
 
 
@@ -8,5 +7,4 @@ class PortfolioManagementNode(Node):
 
         data = state['data']
         data['name'] = "PortfolioManagementNode"
-        print(state)
         return state

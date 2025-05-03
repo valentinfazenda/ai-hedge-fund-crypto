@@ -31,28 +31,5 @@ class DataNode(Node):
         """
         data = state['data']
         data['name'] = "DataNode"
-        print(state)
         return state
 
-        # print("fetching data: ", state)
-        # symbol = state["symbol"]
-        # timeframes = list(TIMEFRAME_WEIGHTS.keys())
-        #
-        # # Default to the configured number of days of data
-        # try:
-        #     # Use our data provider to get multi-timeframe data
-        #     timeframes_data = data_provider.get_latest_multi_timeframe_data(
-        #         symbol=symbol,
-        #         timeframes=timeframes,
-        #     )
-        #
-        #     # Check if we got data for all timeframes
-        #     missing_timeframes = set(timeframes) - set(timeframes_data.keys())
-        #     if missing_timeframes:
-        #         print(f"Warning: Missing data for timeframes: {missing_timeframes}")
-        #
-        #     return {"timeframes": timeframes_data}
-        #
-        # except Exception as e:
-        #     print(f"Error fetching data: {e}")
-        #     return {"timeframes": {}}

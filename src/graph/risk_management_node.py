@@ -8,5 +8,4 @@ class RiskManagementNode(Node):
 
         data = state['data']
         data['name'] = "RiskManagementNode"
-        print(state)
         return state

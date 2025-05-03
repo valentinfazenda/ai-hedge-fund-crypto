@@ -8,6 +8,8 @@ from typing import List, Dict, Any
 from colorama import Fore, Style, init
 from utils import Interval
 from agent import Agent
+from utils.binance_data_provider import BinanceDataProvider
+import matplotlib.pyplot as plt
 
 
 class Backtester:
@@ -16,13 +18,14 @@ class Backtester:
             primary_interval: Interval,
             intervals: List[Interval],
             tickers: List[str],
-            start_date: str,
-            end_date: str,
+            start_date: datetime,
+            end_date: datetime,
             initial_capital: float,
             strategies: List[str],
             model_name: str = "gpt-4o",
             model_provider: str = "OpenAI",
             initial_margin_requirement: float = 0.0,
+            show_agent_graph: bool = False,
     ):
         """
         :param primary_interval: the primary interval of the backtest
@@ -45,6 +48,9 @@ class Backtester:
         self.strategies = strategies
         self.model_name = model_name
         self.model_provider = model_provider
+        self.show_agent_graph = show_agent_graph
+        self.binance_data_provider = BinanceDataProvider()
+        self.klines: Dict[str, pd.DataFrame]() = {}
 
         # Initialize portfolio with support for long/short positions
         self.portfolio_values = []
@@ -264,24 +270,13 @@ class Backtester:
     def prefetch_data(self):
         """Pre-fetch all data needed for the backtest period."""
         print("\nPre-fetching data for the entire backtest period...")
-
-        # Convert end_date string to datetime, fetch up to 1 year before
-        end_date_dt = datetime.strptime(self.end_date, "%Y-%m-%d")
-        start_date_dt = end_date_dt - relativedelta(years=1)
-        start_date_str = start_date_dt.strftime("%Y-%m-%d")
-
         for ticker in self.tickers:
-            # Fetch price data for the entire period, plus 1 year
-            get_prices(ticker, start_date_str, self.end_date)
-
-            # Fetch financial metrics
-            get_financial_metrics(ticker, self.end_date, limit=10)
-
-            # Fetch insider trades
-            get_insider_trades(ticker, self.end_date, start_date=self.start_date, limit=1000)
-
-            # Fetch company news
-            get_company_news(ticker, self.end_date, start_date=self.start_date, limit=1000)
+            # Fetch price data for the entire period
+            data = self.binance_data_provider.get_historical_klines(symbol=ticker,
+                                                                    timeframe=self.primary_interval.value,
+                                                                    start_date=self.start_date,
+                                                                    end_date=self.end_date)
+            self.klines[ticker] = data
 
         print("Data pre-fetch complete.")
 
@@ -289,7 +284,21 @@ class Backtester:
         # Pre-fetch all data at the start
         self.prefetch_data()
 
-        dates = pd.date_range(self.start_date, self.end_date, freq="B")
+        # Check all are DataFrames and collect lengths
+        lengths = []
+        for ticker in self.tickers:
+            df = self.klines.get(ticker)
+            if not isinstance(df, pd.DataFrame):
+                raise TypeError(f"Data for {ticker} is not a DataFrame: {type(df)}")
+            lengths.append(len(df))
+
+        # Check if all lengths are equal
+        if len(set(lengths)) != 1:
+            raise ValueError(f"DataFrames have mismatched lengths: {dict(zip(self.tickers, lengths))}")
+
+        ticker = self.tickers[0]
+        data_df: pd.DataFrame = self.klines[ticker]
+        # dates = pd.date_range(self.start_date, self.end_date, freq="B")
         table_rows = []
         performance_metrics = {"sharpe_ratio": None, "sortino_ratio": None, "max_drawdown": None,
                                "long_short_ratio": None, "gross_exposure": None, "net_exposure": None}
@@ -297,60 +306,37 @@ class Backtester:
         print("\nStarting backtest...")
 
         # Initialize portfolio values list with initial capital
-        if len(dates) > 0:
-            self.portfolio_values = [{"Date": dates[0], "Portfolio Value": self.initial_capital}]
+        if len(data_df) > 0:
+            self.portfolio_values = [{"Date": data_df.loc[0, 'open_time'], "Portfolio Value": self.initial_capital}]
         else:
             self.portfolio_values = []
 
-        for current_date in dates:
-            lookback_start = (current_date - timedelta(days=30)).strftime("%Y-%m-%d")
-            current_date_str = current_date.strftime("%Y-%m-%d")
-            previous_date_str = (current_date - timedelta(days=1)).strftime("%Y-%m-%d")
+        # print(self.portfolio_values)
+        for row in data_df.itertuples(index=True):
 
-            # Skip if there's no prior day to look back (i.e., first date in the range)
-            if lookback_start == current_date_str:
-                continue
-
-            # Get current prices for all tickers
-            try:
-                current_prices = {}
-                missing_data = False
-
-                for ticker in self.tickers:
-                    try:
-                        price_data = get_price_data(ticker, previous_date_str, current_date_str)
-                        if price_data.empty:
-                            print(f"Warning: No price data for {ticker} on {current_date_str}")
-                            missing_data = True
-                            break
-                        current_prices[ticker] = price_data.iloc[-1]["close"]
-                    except Exception as e:
-                        print(
-                            f"Error fetching price for {ticker} between {previous_date_str} and {current_date_str}: {e}")
-                        missing_data = True
-                        break
-
-                if missing_data:
-                    print(f"Skipping trading day {current_date_str} due to missing price data")
-                    continue
-
-            except Exception as e:
-                # If there's a general API error, log it and skip this day
-                print(f"Error fetching prices for {current_date_str}: {e}")
-                continue
+            index = row.Index
+            current_time = row.close_time
+            current_prices = {}
+            for ticker in self.tickers:
+                price_data = self.klines[ticker]
+                current_prices[ticker] = price_data.iloc[index]["close"]
 
             # ---------------------------------------------------------------
             # 1) Execute the agent's trades
             # ---------------------------------------------------------------
-            output = self.agent(
+            output = Agent.run(
+                intervals=self.intervals,
                 tickers=self.tickers,
-                start_date=lookback_start,
-                end_date=current_date_str,
+                end_date=current_time,
                 portfolio=self.portfolio,
+                strategies=self.strategies,
                 model_name=self.model_name,
                 model_provider=self.model_provider,
-                selected_analysts=self.selected_analysts,
+                show_agent_graph=self.show_agent_graph
             )
+
+            print(f"the output: {output}")
+            continue
             decisions = output["decisions"]
             analyst_signals = output["analyst_signals"]
 
