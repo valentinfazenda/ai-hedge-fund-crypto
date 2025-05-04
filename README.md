@@ -19,9 +19,78 @@ The system stands out through its:
 - **Comprehensive Backtesting**: Robust historical performance evaluation with detailed metrics and visualizations
 
 ## Architecture
-![Graph1](imgs/graph1.png)
-![Graph2](imgs/graph2.png)
-![Graph3](imgs/graph3.png)
+
+The system is built around a highly configurable directed acyclic graph (DAG) architecture, where data flows through various processing nodes. 
+This architecture provides exceptional flexibility, allowing users to customize both the available strategies and the timeframes for analysis without modifying the core code.
+
+### Node-Based Workflow System
+
+At its heart, the system uses LangGraph to create a dynamic computational graph where:
+
+1. **Start Node**: Initializes the workflow and prepares the state for processing
+2. **Data Nodes**: Process market data for specific intervals (e.g., 30m, 1h, 4h) 
+3. **Strategy Nodes**: Apply technical analysis algorithms to the processed data
+4. **Risk Management Node**: Evaluates position limits and exposure
+5. **Portfolio Management Node**: Makes final trading decisions using LLM reasoning
+
+The key innovation is that both the data nodes and strategy nodes are fully configurable via the `config.yaml` file, 
+allowing you to add, remove, or modify these nodes without changing the core architecture.
+
+![Graph Demo1](imgs/graph1.png)
+
+### Configurable Timeframes
+
+You can specify multiple timeframes for analysis in your configuration:
+
+```yaml
+signals:
+  intervals: ["5m", "15m", "30m", "1h", "4h", "1d"]
+```
+
+The system will dynamically create separate data processing nodes for each timeframe, allowing strategies to analyze market behavior across multiple time horizons simultaneously. 
+This multi-timeframe approach provides more robust signals by capturing both short-term and long-term market trends.
+
+![Graph Demo2](imgs/graph2.png)
+
+### Configurable Strategies
+
+Similarly, you can specify which trading strategies to include:
+
+```yaml
+signals:
+  strategies: ['MacdStrategy', 'RSIStrategy', 'BollingerStrategy']
+```
+
+The system will dynamically load and integrate only the specified strategies into the workflow graph. Each strategy is implemented as an independent node that:
+
+1. Receives the aggregated multi-timeframe data
+2. Applies its specific technical analysis algorithms
+3. Generates trading signals with confidence levels
+4. Passes these signals to the risk management node
+
+This modular approach allows you to easily experiment with different combinations of strategies without rewriting any code. 
+You can also create your own custom strategy modules and add them to the configuration.
+
+![Graph Demo3](imgs/graph3gi.png)
+
+### Data Flow Architecture
+
+The complete data flow works as follows:
+
+1. The start node initializes the workflow state
+2. Multiple timeframe nodes fetch and process data in parallel for different intervals
+3. The merge node combines the multi-timeframe data into a unified state
+4. Multiple strategy nodes analyze this unified data and generate signals
+5. The risk management node applies position sizing and exposure limits
+6. The portfolio management node makes final trading decisions using all available signals and LLM reasoning
+
+This architecture provides several advantages:
+- **Flexibility**: Change strategies or timeframes without code modifications
+- **Parallelization**: Process multiple timeframes concurrently for improved performance
+- **Isolation**: Maintain separation of concerns between different components
+- **Extensibility**: Add new strategy nodes without affecting existing functionality
+- **Visualization**: Generate visual representations of the workflow for better understanding
+
 ## Features
 
 - **Strategy-Based Architecture**: Implement and backtest multiple trading strategies
@@ -144,17 +213,73 @@ The backtest generates detailed performance metrics and visualizations:
 
 ### Running Live Mode
 
-For real-time analysis and trading signals (no actual trading):
+The system supports two live trading modes: signal generation and real trading execution.
+
+#### Signal Generation Only
+
+For real-time analysis and trading signals without executing actual trades:
 
 1. Configure your settings in `config.yaml`:
 ```yaml
 mode: live
 ```
-for the real trading and send order to the Binance exchange, you can use the client from gateway, it's all most the same 
-usage with `python-binance` but with some functions enhancement.
-
 
 2. Run the main script:
 ```bash
 uv run main.py
 ```
+
+This will fetch current market data, run it through your configured strategies, 
+and generate trading signals without sending any orders to exchanges.
+
+#### Real Trading Execution
+
+For live trading with actual order execution on Binance:
+
+1. Configure your settings in `config.yaml`:
+```yaml
+mode: live
+execution: live_trading  # Execute real trades
+```
+
+2. Ensure your API keys have trading permissions in your `.env` file:
+```
+BINANCE_API_KEY=your-binance-api-key-with-trading-permissions
+BINANCE_API_SECRET=your-binance-api-secret
+```
+
+3. Run the main script:
+```bash
+uv run main.py
+```
+
+The system will use the Binance gateway client to send actual orders to the exchange based on your strategy signals. The gateway module provides an enhanced interface to Binance's API, with similar functionality to `python-binance` but with additional features optimized for algorithmic trading.
+
+> **IMPORTANT**: Live trading involves real financial risk. Start with small amounts and thoroughly test your strategies in backtesting mode before deploying with real capital.
+
+## Creating Custom Strategies
+
+To create a custom strategy, you need to implement the BaseNode interface and define the logic for processing multi-interval data.
+
+## Project Structure
+
+The project is organized into several directories:
+- `src`: Contains the main code and modules
+- `tests`: Contains unit tests
+- `docs`: Contains project documentation
+
+## Contributing
+
+Contributions are welcome! Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute to the project.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
+
+## Disclaimer
+
+This project is provided "as is" without any warranty. Use at your own risk.
+
+## Referral Links
+
+If you find this project useful, consider supporting the developers by purchasing a license or referring others to the project.
