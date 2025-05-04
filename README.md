@@ -168,6 +168,7 @@ source .venv/bin/activate
 # Install dependencies using pyproject.toml and lockfile
 uv pip sync
 ```
+If you have more questions, feel free to check out the [uv documentation](https://docs.astral.sh/uv/getting-started/installation/)
 
 3. Copy the example configuration:
 ```bash
