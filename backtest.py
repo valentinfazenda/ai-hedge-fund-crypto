@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from utils import settings
+from src.utils import settings
 
 from src.backtest.backtester import Backtester
 

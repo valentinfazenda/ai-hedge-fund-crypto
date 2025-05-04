@@ -1,8 +1,8 @@
 from dotenv import load_dotenv
-from utils import settings
+from src.utils import settings
 from datetime import datetime
 
-from agent import Agent
+from src.agent import Agent
 from src.backtest.backtester import Backtester
 
 load_dotenv()
