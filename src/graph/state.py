@@ -1,25 +1,14 @@
-from typing_extensions import Annotated, Sequence, TypedDict
-import operator
+from typing import List, Dict, TypedDict, Annotated, Any
 from langchain_core.messages import BaseMessage
-
-
+from langgraph.graph import add_messages
+from utils.util_func import deep_merge_dicts
 import json
 
 
-def merge_dicts(a: dict[str, any], b: dict[str, any]) -> dict[str, any]:
-    return {**a, **b}
-
-
-# Define agent state
 class AgentState(TypedDict):
-    messages: Sequence[BaseMessage]
-    data: dict
-    metadata: dict
-
-# class AgentState1(TypedDict):
-#     messages: Annotated[Sequence[BaseMessage], operator.add]
-#     data: Annotated[dict[str, any], merge_dicts]
-#     metadata: Annotated[dict[str, any], merge_dicts]
+    messages: Annotated[List[BaseMessage], add_messages]
+    data: Annotated[Dict[str, Any], deep_merge_dicts]
+    metadata: Annotated[Dict[str, Any], deep_merge_dicts]
 
 
 def show_agent_reasoning(output, agent_name):

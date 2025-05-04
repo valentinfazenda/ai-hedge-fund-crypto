@@ -6,6 +6,7 @@ from socket import gaierror
 from typing import Optional
 from asyncio import sleep
 from random import random
+import websockets as ws
 
 # load orjson if available, otherwise default to json
 orjson = None
@@ -19,7 +20,6 @@ try:
 except ImportError:
     from websockets import ConnectionClosedError  # type: ignore
 
-
 Proxy = None
 proxy_connect = None
 try:
@@ -30,15 +30,16 @@ try:
 except ImportError:
     pass
 
-import websockets as ws
 
-from src.gateway.binance.exceptions import (
+
+from ..exceptions import (
     BinanceWebsocketClosed,
     BinanceWebsocketUnableToConnect,
     BinanceWebsocketQueueOverflow,
 )
-from src.gateway.binance.helpers import get_loop
-from src.gateway.binance.ws.constants import WSListenerState
+
+from ..helpers import get_loop
+from ..ws.constants import WSListenerState
 
 
 class ReconnectingWebsocket:
@@ -50,14 +51,14 @@ class ReconnectingWebsocket:
     MAX_QUEUE_SIZE = 100
 
     def __init__(
-        self,
-        url: str,
-        path: Optional[str] = None,
-        prefix: str = "ws/",
-        is_binary: bool = False,
-        exit_coro=None,
-        https_proxy: Optional[str] = None,
-        **kwargs,
+            self,
+            url: str,
+            path: Optional[str] = None,
+            prefix: str = "ws/",
+            is_binary: bool = False,
+            exit_coro=None,
+            https_proxy: Optional[str] = None,
+            **kwargs,
     ):
         self._loop = get_loop()
         self._log = logging.getLogger(__name__)
@@ -216,10 +217,10 @@ class ReconnectingWebsocket:
                     self._log.debug(f"_read_loop cancelled error {e}")
                     break
                 except (
-                    asyncio.IncompleteReadError,
-                    gaierror,
-                    ConnectionClosedError,
-                    BinanceWebsocketClosed,
+                        asyncio.IncompleteReadError,
+                        gaierror,
+                        ConnectionClosedError,
+                        BinanceWebsocketClosed,
                 ) as e:
                     # reports errors and continue loop
                     self._log.error(f"{e.__class__.__name__} ({e})")
@@ -229,9 +230,9 @@ class ReconnectingWebsocket:
                         "m": f"{e}",
                     })
                 except (
-                    BinanceWebsocketUnableToConnect,
-                    BinanceWebsocketQueueOverflow,
-                    Exception,
+                        BinanceWebsocketUnableToConnect,
+                        BinanceWebsocketQueueOverflow,
+                        Exception,
                 ) as e:
                     # reports errors and break the loop
                     self._log.error(f"Unknown exception ({e})")
@@ -256,7 +257,7 @@ class ReconnectingWebsocket:
             await asyncio.sleep(reconnect_wait)
             try:
                 await self.connect()
-            except Exception as e:
+            except Exception:
                 pass
         else:
             self._log.error(f"Max reconnections {self.MAX_RECONNECTS} reached:")
@@ -274,13 +275,13 @@ class ReconnectingWebsocket:
 
     async def _wait_for_reconnect(self):
         while (
-            self.ws_state != WSListenerState.STREAMING
-            and self.ws_state != WSListenerState.EXITING
+                self.ws_state != WSListenerState.STREAMING
+                and self.ws_state != WSListenerState.EXITING
         ):
             await sleep(0.1)
 
     def _get_reconnect_wait(self, attempts: int) -> int:
-        expo = 2**attempts
+        expo = 2 ** attempts
         return round(random() * min(self.MAX_RECONNECT_SECONDS, expo - 1) + 1)
 
     async def before_reconnect(self):

@@ -6,13 +6,13 @@ import time
 import aiohttp
 import yarl
 
-from src.gateway.binance.enums import HistoricalKlinesType
-from src.gateway.binance.exceptions import (
+from .enums import HistoricalKlinesType
+from .exceptions import (
     BinanceAPIException,
     BinanceRequestException,
     NotImplementedException,
 )
-from src.gateway.binance.helpers import (
+from .helpers import (
     convert_list_to_json_array,
     convert_ts_str,
     get_loop,

@@ -836,6 +836,38 @@ class Client(BaseClient):
             klines_type=klines_type,
         )
 
+    def get_historical_klines_with_end_time(
+        self,
+        symbol,
+        interval,
+        end_str,
+        limit=None,
+        klines_type: HistoricalKlinesType = HistoricalKlinesType.SPOT,
+    ):
+        """Get Historical Klines from Binance
+
+        :param symbol: Name of symbol pair e.g. BNBBTC
+        :type symbol: str
+        :param interval: Binance Kline interval
+        :type interval: str
+        :param end_str: optional - end date string in UTC format or timestamp in milliseconds (default will fetch everything up to now)
+        :type end_str: str|int
+        :param limit: Default 1000; max 1000.
+        :type limit: int
+        :param klines_type: Historical klines type: SPOT or FUTURES
+        :type klines_type: HistoricalKlinesType
+
+        :return: list of OHLCV values (Open time, Open, High, Low, Close, Volume, Close time, Quote asset volume, Number of trades, Taker buy base asset volume, Taker buy quote asset volume, Ignore)
+
+        """
+        return self._historical_klines(
+            symbol,
+            interval,
+            end_str=end_str,
+            limit=limit,
+            klines_type=klines_type,
+        )
+
     def _historical_klines(
         self,
         symbol,
@@ -996,11 +1028,8 @@ class Client(BaseClient):
         :return: generator of OHLCV values
 
         """
-
-        initial_limit_set = True
         if limit is None:
             limit = 1000
-            initial_limit_set = False
 
         # convert interval to useful value in seconds
         timeframe = interval_to_milliseconds(interval)
@@ -7299,6 +7328,31 @@ class Client(BaseClient):
             symbol,
             interval,
             start_str,
+            end_str=end_str,
+            limit=limit,
+            klines_type=HistoricalKlinesType.FUTURES,
+        )
+
+    def futures_historical_klines_with_end_time(
+        self, symbol, interval, end_str, limit=500
+    ):
+        """Get historical futures klines from Binance
+
+        :param symbol: Name of symbol pair e.g. BNBBTC
+        :type symbol: str
+        :param interval: Binance Kline interval
+        :type interval: str
+        :param end_str: optional - end date string in UTC format or timestamp in milliseconds (default will fetch everything up to now)
+        :type end_str: str|int
+        :param limit: Default 500; max 1000.
+        :type limit: int
+
+        :return: list of OHLCV values (Open time, Open, High, Low, Close, Volume, Close time, Quote asset volume, Number of trades, Taker buy base asset volume, Taker buy quote asset volume, Ignore)
+
+        """
+        return self._historical_klines(
+            symbol,
+            interval,
             end_str=end_str,
             limit=limit,
             klines_type=HistoricalKlinesType.FUTURES,

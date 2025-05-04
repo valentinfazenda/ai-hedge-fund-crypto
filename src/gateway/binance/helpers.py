@@ -8,7 +8,7 @@ import pytz
 
 from datetime import datetime
 
-from src.gateway.binance.exceptions import UnknownDateFormat
+from .exceptions import UnknownDateFormat
 
 
 def date_to_milliseconds(date_str: str) -> int:
@@ -73,12 +73,24 @@ def round_step_size(
     return float(quantity - quantity % Decimal(str(step_size)))
 
 
-def convert_ts_str(ts_str):
-    if ts_str is None:
-        return ts_str
-    if type(ts_str) == int:
-        return ts_str
-    return date_to_milliseconds(ts_str)
+def convert_ts_str(ts):
+    """
+    Convert a timestamp string to milliseconds, if necessary.
+    Args:
+        ts (str | int | None): Timestamp as a string (e.g., '2025-04-01'), integer, or None.
+
+    Returns:
+        int | None: Timestamp in milliseconds if input was a string, original value if int or None.
+    """
+
+    if ts is None or isinstance(ts, int):
+        return ts
+    return date_to_milliseconds(ts)
+    # if ts_str is None:
+    #     return ts_str
+    # if type(ts_str) == int:
+    #     return ts_str
+    # return date_to_milliseconds(ts_str)
 
 
 def convert_list_to_json_array(l):

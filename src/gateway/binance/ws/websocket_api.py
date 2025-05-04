@@ -5,7 +5,7 @@ from websockets import WebSocketClientProtocol  # type: ignore
 
 from .constants import WSListenerState
 from .reconnecting_websocket import ReconnectingWebsocket
-from src.gateway.binance.exceptions import BinanceAPIException, BinanceWebsocketUnableToConnect
+from ..exceptions import BinanceAPIException, BinanceWebsocketUnableToConnect
 
 
 class WebsocketAPI(ReconnectingWebsocket):
