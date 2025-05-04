@@ -18,6 +18,22 @@ The system stands out through its:
 - **Dynamic Strategy Visualization**: Automatic generation of computational graph visualizations to better understand the decision flow
 - **Comprehensive Backtesting**: Robust historical performance evaluation with detailed metrics and visualizations
 
+## Backtest Results
+
+Sample backtesting results showcasing how well-designed trading strategies can generate high-quality signals 
+when implemented in this framework. The system's performance is driven by the quality of your strategies, 
+with the framework enabling efficient implementation, LLM-based decision refinement, and multi-timeframe analysis:
+
+![Backtest Results](imgs/backtest1.png)
+![Backtest Results](imgs/backtest2.png)
+![Portfolio Performance](imgs/backtest3.png)
+
+These results demonstrate the system's ability to:
+- Generate profitable trading signals across different market conditions
+- Manage risk effectively with position sizing rules
+- Adapt to changing market dynamics with multi-timeframe analysis
+- Provide detailed performance metrics for strategy evaluation
+
 ## Architecture
 
 The system is built around a highly configurable directed acyclic graph (DAG) architecture, where data flows through various processing nodes. 
@@ -71,7 +87,7 @@ The system will dynamically load and integrate only the specified strategies int
 This modular approach allows you to easily experiment with different combinations of strategies without rewriting any code. 
 You can also create your own custom strategy modules and add them to the configuration.
 
-![Graph Demo3](imgs/graph3gi.png)
+![Graph Demo3](imgs/graph3.png)
 
 ### Data Flow Architecture
 
@@ -117,14 +133,16 @@ This architecture provides several advantages:
 ## Setup
 
 ### Prerequisites
-- Python 3.9+
-- Binance account (for data access)
+- Python 3.9 or higher (Python 3.12 recommended — used during development)
+- Binance account (required for accessing market data)
+
+⚠️ While Python 3.9+ should work, we recommend using Python 3.12 for full compatibility with the development environment.
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/ai-hedge-fund-crypto.git
+git clone https://github.com/51bitquant/ai-hedge-fund-crypto.git
 cd ai-hedge-fund-crypto
 ```
 
@@ -269,8 +287,12 @@ The project is organized into several directories:
 - `docs`: Contains project documentation
 
 ## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-Contributions are welcome! Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute to the project.
 
 ## License
 
@@ -280,6 +302,9 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 This project is provided "as is" without any warranty. Use at your own risk.
 
+
 ## Referral Links
 
-If you find this project useful, consider supporting the developers by purchasing a license or referring others to the project.
+If you're interested in trading cryptocurrency on Binance, you can use the referral link below to receive a discount on trading fees:
+
+[Binance Futures Referral Link](https://www.binance.com/futures/ref/51bitquant) - Sign up with this link to get a fee discount when trading on Binance Futures.
