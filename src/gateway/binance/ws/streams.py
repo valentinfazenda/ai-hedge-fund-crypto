@@ -3,16 +3,16 @@ import time
 from enum import Enum
 from typing import Optional, List, Dict, Callable, Any
 
-from src.gateway.binance.ws.constants import KEEPALIVE_TIMEOUT
-from src.gateway.binance.ws.keepalive_websocket import KeepAliveWebsocket
-from src.gateway.binance.ws.reconnecting_websocket import ReconnectingWebsocket
-from src.gateway.binance.ws.threaded_stream import ThreadedApiManager
+from ..ws.constants import KEEPALIVE_TIMEOUT
+from ..ws.keepalive_websocket import KeepAliveWebsocket
+from ..ws.reconnecting_websocket import ReconnectingWebsocket
+from ..ws.threaded_stream import ThreadedApiManager
 
 
-from src.gateway.binance.async_client import AsyncClient
-from src.gateway.binance.enums import FuturesType
-from src.gateway.binance.enums import ContractType
-from src.gateway.binance.helpers import get_loop
+from ..async_client import AsyncClient
+from ..enums import FuturesType
+from ..enums import ContractType
+from ..helpers import get_loop
 
 
 class BinanceSocketType(str, Enum):

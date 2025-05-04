@@ -1,7 +1,7 @@
 import asyncio
-from src.gateway.binance.async_client import AsyncClient
-from src.gateway.binance.ws.reconnecting_websocket import ReconnectingWebsocket
-from src.gateway.binance.ws.constants import KEEPALIVE_TIMEOUT
+from ..async_client import AsyncClient
+from ..ws.reconnecting_websocket import ReconnectingWebsocket
+from ..ws.constants import KEEPALIVE_TIMEOUT
 
 
 class KeepAliveWebsocket(ReconnectingWebsocket):

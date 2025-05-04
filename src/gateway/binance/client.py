@@ -1028,11 +1028,8 @@ class Client(BaseClient):
         :return: generator of OHLCV values
 
         """
-
-        initial_limit_set = True
         if limit is None:
             limit = 1000
-            initial_limit_set = False
 
         # convert interval to useful value in seconds
         timeframe = interval_to_milliseconds(interval)

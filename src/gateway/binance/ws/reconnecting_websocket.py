@@ -6,6 +6,7 @@ from socket import gaierror
 from typing import Optional
 from asyncio import sleep
 from random import random
+import websockets as ws
 
 # load orjson if available, otherwise default to json
 orjson = None
@@ -29,16 +30,16 @@ try:
 except ImportError:
     pass
 
-import websockets as ws
 
-from src.gateway.binance.exceptions import (
+
+from ..exceptions import (
     BinanceWebsocketClosed,
     BinanceWebsocketUnableToConnect,
     BinanceWebsocketQueueOverflow,
 )
 
-from src.gateway.binance.helpers import get_loop
-from src.gateway.binance.ws.constants import WSListenerState
+from ..helpers import get_loop
+from ..ws.constants import WSListenerState
 
 
 class ReconnectingWebsocket:
@@ -256,7 +257,7 @@ class ReconnectingWebsocket:
             await asyncio.sleep(reconnect_wait)
             try:
                 await self.connect()
-            except Exception as e:
+            except Exception:
                 pass
         else:
             self._log.error(f"Max reconnections {self.MAX_RECONNECTS} reached:")

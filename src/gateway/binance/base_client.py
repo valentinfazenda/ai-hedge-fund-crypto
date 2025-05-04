@@ -14,7 +14,7 @@ import urllib.parse as _urlencode
 from operator import itemgetter
 from urllib.parse import urlencode
 
-from src.gateway.binance.ws.websocket_api import WebsocketAPI
+from .ws.websocket_api import WebsocketAPI
 
 from .helpers import get_loop
 
