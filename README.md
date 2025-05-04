@@ -257,7 +257,6 @@ For live trading with actual order execution on Binance:
 1. Configure your settings in `config.yaml`:
 ```yaml
 mode: live
-execution: live_trading  # Execute real trades
 ```
 
 2. Ensure your API keys have trading permissions in your `.env` file:
@@ -270,8 +269,46 @@ BINANCE_API_SECRET=your-binance-api-secret
 ```bash
 uv run main.py
 ```
+## Real Trading Integration (Planned)
+The system is designed to support real trading through a Binance gateway client, which can send live orders based on strategy-generated signals. The gateway module extends the functionality of the python-binance library with features optimized for algorithmic trading.
 
-The system will use the Binance gateway client to send actual orders to the exchange based on your strategy signals. The gateway module provides an enhanced interface to Binance's API, with similar functionality to `python-binance` but with additional features optimized for algorithmic trading.
+While full trading execution is not yet implemented, the current setup focuses on generating structured trading signals. These signals can later be converted into actual orders as part of a future enhancement.
+
+Here’s an example of how to run the agent and retrieve signals:
+```python
+
+result = Agent.run(
+            primary_interval=settings.primary_interval,
+            intervals=settings.signals.intervals,
+            tickers=settings.signals.tickers,
+            end_date=datetime.now(),
+            portfolio=portfolio,
+            strategies=settings.signals.strategies,
+            show_reasoning=settings.show_reasoning,
+            show_agent_graph=settings.show_agent_graph
+        )
+print(result)
+```
+Sample output:
+```json
+{
+  "decisions": {
+    "BTCUSDT": {
+      "action": "hold",
+      "quantity": 0,
+      "confidence": 20,
+      "reasoning": "Signals are mixed with bearish trends dominating in the shorter timeframes. No long position held, and the bearish outlook indicates avoiding purchases."
+    },
+    "ETHUSDT": {
+      "action": "buy",
+      "quantity": 10.87547580206634,
+      "confidence": 23,
+      "reasoning": "Despite signals being neutral with a slight bullish trend on longer timeframes, the maximum shares can be purchased. The overall market sentiment is uncertain, but ETH shows potential for upward movement."
+    }
+  }
+}
+
+```
 
 > **IMPORTANT**: Live trading involves real financial risk. Start with small amounts and thoroughly test your strategies in backtesting mode before deploying with real capital.
 
