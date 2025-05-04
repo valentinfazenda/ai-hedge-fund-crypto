@@ -142,12 +142,21 @@ cd ai-hedge-fund-crypto
 
 2. 使用uv设置（推荐）：
 ```bash
-# 如果没有安装uv，先安装
+# Install uv if you don't have it
 curl -fsSL https://install.lunarvim.org/uv.sh | sh
 
-# 使用uv安装依赖
-uv pip install -r requirements.txt
-# 或使用锁定文件
+# create an venv with python 3.12
+uv venv --python 3.12
+
+# Activate the virtual environment
+# For macOS/Linux:
+source .venv/bin/activate
+# For Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+
+# For Windows (CMD):
+.venv\Scripts\activate.bat
+# Install dependencies using pyproject.toml and lockfile
 uv pip sync
 ```
 

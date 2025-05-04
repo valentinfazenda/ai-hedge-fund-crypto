@@ -154,9 +154,18 @@ cd ai-hedge-fund-crypto
 # Install uv if you don't have it
 curl -fsSL https://install.lunarvim.org/uv.sh | sh
 
-# Install dependencies using uv
-uv pip install -r requirements.txt
-# OR use the lockfile
+# create an venv with python 3.12
+uv venv --python 3.12
+
+# Activate the virtual environment
+# For macOS/Linux:
+source .venv/bin/activate
+# For Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+
+# For Windows (CMD):
+.venv\Scripts\activate.bat
+# Install dependencies using pyproject.toml and lockfile
 uv pip sync
 ```
 
