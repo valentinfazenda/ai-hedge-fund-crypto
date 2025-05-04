@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from utils import settings
 
-from agent import Workflow, Agent
+from agent import Agent
 
 load_dotenv()
 

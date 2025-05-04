@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 from utils import settings
 
-from agent import Workflow, Agent
 from src.backtest.backtester import Backtester
 
 load_dotenv()

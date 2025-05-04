@@ -4,14 +4,11 @@ Binance Data Provider Module
 This module handles retrieving data from Binance and preparing it for the trading system.
 """
 
-import os
 from typing import Dict, List, Optional
 import pandas as pd
 from datetime import datetime, timedelta
-import time
 from pathlib import Path
 
-# Import the Binance client
 from src.gateway.binance.client import Client
 from src.utils.constants import COLUMNS, NUMERIC_COLUMNS
 

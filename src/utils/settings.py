@@ -1,4 +1,3 @@
-import os
 from pydantic_settings import BaseSettings
 from pydantic import model_validator, BaseModel
 from datetime import datetime
@@ -8,6 +7,7 @@ from dotenv import load_dotenv
 from .constants import Interval
 
 load_dotenv()
+
 
 class SignalSettings(BaseModel):
     intervals: List[Interval]

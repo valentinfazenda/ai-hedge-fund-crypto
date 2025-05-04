@@ -7,7 +7,6 @@ This module handles the first step in the workflow: fetching data from the data 
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
-from .state import AgentState
 from src.utils import BinanceDataProvider, Interval
 from .base_node import BaseNode, AgentState
 
