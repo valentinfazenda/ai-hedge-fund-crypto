@@ -277,14 +277,180 @@ The system will use the Binance gateway client to send actual orders to the exch
 
 ## Creating Custom Strategies
 
-To create a custom strategy, you need to implement the BaseNode interface and define the logic for processing multi-interval data.
+Creating your own trading strategy is straightforward with the system's modular architecture:
+
+1. **Create a Strategy Class**:
+   Create a new Python file in the `src/strategies/` directory (e.g., `my_strategy.py`):
+
+```python
+from typing import Dict, Any
+import json
+import pandas as pd
+from langchain_core.messages import HumanMessage
+from src.graph import AgentState, BaseNode
+
+class MyStrategy(BaseNode):
+    def __call__(self, state: AgentState) -> Dict[str, Any]:
+        """
+        Custom strategy implementation that processes market data across multiple timeframes.
+        """
+        # Access the state data
+        data = state.get("data", {})
+        data['name'] = "MyStrategy"  # Set strategy name for visualization
+        
+        # Get tickers and intervals from the state
+        tickers = data.get("tickers", [])
+        intervals = data.get("intervals", [])
+        
+        # Initialize analysis dictionary to store results
+        technical_analysis = {}
+        for ticker in tickers:
+            technical_analysis[ticker] = {}
+        
+        # Process each ticker and interval combination
+        for ticker in tickers:
+            for interval in intervals:
+                # Access the price data for this ticker and interval
+                df = data.get(f"{ticker}_{interval.value}", pd.DataFrame())
+                
+                if df.empty:
+                    continue
+                
+                # Implement your custom technical analysis here
+                # Example: Simple moving average crossover strategy
+                df['sma_fast'] = df['close'].rolling(window=10).mean()
+                df['sma_slow'] = df['close'].rolling(window=30).mean()
+                
+                # Generate signal based on your strategy logic
+                signal = "neutral"
+                confidence = 50
+                
+                if df['sma_fast'].iloc[-1] > df['sma_slow'].iloc[-1]:
+                    signal = "bullish"
+                    confidence = 70
+                elif df['sma_fast'].iloc[-1] < df['sma_slow'].iloc[-1]:
+                    signal = "bearish"
+                    confidence = 70
+                
+                # Store analysis results
+                technical_analysis[ticker][interval.value] = {
+                    "signal": signal,
+                    "confidence": confidence,
+                    "strategy_signals": {
+                        "simple_ma_crossover": {
+                            "signal": signal,
+                            "confidence": confidence,
+                            "metrics": {
+                                "sma_fast": float(df['sma_fast'].iloc[-1]),
+                                "sma_slow": float(df['sma_slow'].iloc[-1]),
+                                "price": float(df['close'].iloc[-1])
+                            }
+                        }
+                    }
+                }
+        
+        # Create message with analysis results
+        message = HumanMessage(
+            content=json.dumps(technical_analysis),
+            name="my_strategy_agent",
+        )
+        
+        # Update the state with the analysis
+        state["data"]["analyst_signals"]["my_strategy_agent"] = technical_analysis
+        
+        # Return the updated state
+        return {
+            "messages": [message],
+            "data": data,
+        }
+```
+
+2. **Register Your Strategy**:
+   Add your strategy to `src/strategies/__init__.py`:
+
+```python
+from .macd_strategy import MacdStrategy
+from .rsi_strategy import RSIStrategy
+from .my_strategy import MyStrategy
+
+__all__ = [
+    "MacdStrategy",
+    "RSIStrategy",
+    "MyStrategy",
+]
+```
+
+3. **Configure Your Strategy**:
+   Edit `config.yaml` to include your strategy:
+
+```yaml
+signals:
+  intervals: ["1h", "4h"]
+  tickers: ["BTCUSDT", "ETHUSDT"]
+  strategies: ['MyStrategy']
+```
+
+4. **Run the System**:
+   Execute the system to see your strategy in action:
+
+```bash
+uv run backtest.py
+```
+
+Your strategy will be automatically integrated into the workflow graph and will contribute to the final trading decisions. The system will generate a visualization of the workflow including your strategy node.
 
 ## Project Structure
 
-The project is organized into several directories:
-- `src`: Contains the main code and modules
-- `tests`: Contains unit tests
-- `docs`: Contains project documentation
+The project follows a modular, organized structure:
+
+```
+ai-hedge-fund-crypto/
+├── src/                       # Source code directory
+│   ├── agent/                 # Agent system components
+│   │   ├── workflow.py        # Workflow creation and management
+│   │   └── agent.py           # Main agent implementation
+│   ├── backtest/              # Backtesting framework
+│   │   └── backtester.py      # Backtester implementation
+│   ├── graph/                 # Workflow graph components
+│   │   ├── base_node.py       # Base node interface
+│   │   ├── start_node.py      # Workflow initialization node
+│   │   ├── data_node.py       # Data processing nodes
+│   │   ├── risk_management_node.py  # Risk management
+│   │   └── portfolio_management_node.py  # Decision making
+│   ├── indicators/            # Technical indicators
+│   │   ├── trend.py           # Trend indicators (MA, MACD)
+│   │   ├── momentum.py        # Momentum indicators (RSI, etc.)
+│   │   └── volatility.py      # Volatility indicators (BB, etc.)
+│   ├── llm/                   # Language model integration
+│   │   └── __init__.py        # LLM setup and configuration
+│   ├── strategies/            # Trading strategies
+│   │   ├── macd_strategy.py   # MACD-based strategy
+│   │   ├── rsi_strategy.py    # RSI-based strategy
+│   │   └── __init__.py        # Strategy registry
+│   ├── utils/                 # Utility functions
+│   │   ├── binance_data_provider.py  # Data fetching
+│   │   └── config.py          # Configuration management
+│   └── gateway/               # Exchange connectivity
+│       └── binance            # Enhanced Binance client
+├── imgs/                      # Strategy visualizations and results
+├── cache/                     # Data cache for efficiency
+├── backtest.py                # Backtest entry point
+├── main.py                    # Main application entry point
+├── config.yaml                # Main configuration file
+├── config.example.yaml        # Example configuration
+├── uv.lock                    # UV dependency lock file
+└── pyproject.toml             # Project metadata and dependencies
+```
+
+Key Files and Directories:
+
+- **backtest.py**: Main entry point for running backtests
+- **main.py**: Main entry point for running live analysis
+- **config.yaml**: Central configuration file where you set tickers, intervals, and strategies
+- **src/strategies/**: Directory for all trading strategy implementations
+- **src/graph/**: Components for building the computational graph workflow
+- **src/indicators/**: Technical indicators used by strategies
+- **src/llm/**: Language model integration for decision making
 
 ## Contributing
 1. Fork the repository
