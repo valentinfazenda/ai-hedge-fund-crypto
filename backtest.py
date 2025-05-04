@@ -23,10 +23,3 @@ if __name__ == "__main__":
     print("Starting backtest...")
     performance_metrics = backtester.run_backtest()
     performance_df = backtester.analyze_performance()
-    # Agent.run(tickers=settings.signals.tickers,
-    #           start_date=settings.start_date,
-    #           end_date=settings.end_date,
-    #           portfolio=portfolio,
-    #           strategies=settings.signals.strategies,
-    #           show_reasoning=settings.show_reasoning,
-    #           )

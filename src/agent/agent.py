@@ -1,6 +1,6 @@
 from typing import List, Dict
 from langchain_core.messages import HumanMessage
-
+from datetime import datetime
 from utils import Interval, save_graph_as_png, parse_str_to_json
 from .workflow import Workflow
 
@@ -12,7 +12,7 @@ class Agent:
             primary_interval: Interval,
             intervals: List[Interval],
             tickers: List[str],
-            end_date: str,
+            end_date: datetime,
             portfolio: Dict,
             strategies: List[str],
             show_reasoning: bool = False,

@@ -1,5 +1,5 @@
-mode: backtest
-start_date: 2025-04-01
+mode: backtest # backtest, live
+start_date: 2025-04-20
 end_date: 2025-05-01
 primary_interval: 1h
 initial_cash: 100000
@@ -7,8 +7,8 @@ margin_requirement: 0.0
 show_reasoning: false
 show_agent_graph: true
 signals:
-  intervals: ["1h"]
-  tickers: ["BTCUSDT"]
+  intervals: ["30m", "1h", "4h"]
+  tickers: ["BTCUSDT", "ETHUSDT"]
   strategies: ['MacdStrategy']
 # , "RSIStrategy"]
 
