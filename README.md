@@ -415,10 +415,12 @@ ai-hedge-fund-crypto/
 │   │   ├── base_node.py       # Base node interface
 │   │   ├── start_node.py      # Workflow initialization node
 │   │   ├── data_node.py       # Data processing nodes
+│   │   ├── empty_node.py      # do nothing.
 │   │   ├── risk_management_node.py  # Risk management
 │   │   └── portfolio_management_node.py  # Decision making
+│   │   └── state.py           # defined Agent state.
 │   ├── indicators/            # Technical indicators
-│   │   ├── trend.py           # Trend indicators (MA, MACD)
+│   │   ├── general_indicators.py # some indicators.
 │   │   ├── momentum.py        # Momentum indicators (RSI, etc.)
 │   │   └── volatility.py      # Volatility indicators (BB, etc.)
 │   ├── llm/                   # Language model integration
