@@ -71,9 +71,6 @@ class Backtester:
                 }
                 for ticker in tickers
             },
-            # Number of shares held long  # Number of shares held short
-            # Average cost basis per share (long)
-            # Average cost basis per share (short)  # Dollars of margin used for this ticker's short
             "realized_gains": {
                 ticker: {
                     "long": 0.0,  # Realized gains from long positions

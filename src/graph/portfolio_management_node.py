@@ -3,17 +3,10 @@ from typing import Dict, Any, List
 import json
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_openai import ChatOpenAI
 from .base_node import BaseNode, AgentState
 from graph import show_agent_reasoning
+from llm import openai_llm, json_parser
 
-llm = ChatOpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    model="gpt-4o-mini",  # or "gpt-4" if you have access
-)
-
-parser = JsonOutputParser()
 
 
 class PortfolioManagementNode(BaseNode):
@@ -171,7 +164,7 @@ def generate_trading_decision(
         ]
     )
 
-    chain = prompt | llm | parser
+    chain = prompt | openai_llm | json_parser
     result = chain.invoke(
         {
             "signals_by_ticker": json.dumps(signals_by_ticker, indent=2),
