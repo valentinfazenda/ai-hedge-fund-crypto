@@ -1,5 +1,8 @@
 # AI Hedge Fund Crypto
 
+[![English](https://img.shields.io/badge/Language-English-blue)](README.md)
+[![中文](https://img.shields.io/badge/语言-中文-red)](README_CN.md)
+
 A next-generation algorithmic trading framework that leverages graph-based workflow architecture, 
 ensemble technical analysis, and AI language models to make data-driven cryptocurrency trading decisions. 
 This system employs a directed acyclic graph (DAG) of specialized nodes for multi-timeframe analysis, 
@@ -274,7 +277,7 @@ The system is designed to support real trading through a Binance gateway client,
 
 While full trading execution is not yet implemented, the current setup focuses on generating structured trading signals. These signals can later be converted into actual orders as part of a future enhancement.
 
-Here’s an example of how to run the agent and retrieve signals:
+Here's an example of how to run the agent and retrieve signals:
 ```python
 
 result = Agent.run(
