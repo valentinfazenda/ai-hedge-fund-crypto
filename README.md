@@ -129,6 +129,7 @@ This architecture provides several advantages:
 - [Creating Custom Strategies](#creating-custom-strategies)
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
+- [Star History](#star-history)
 - [License](#license)
 - [Disclaimer](#disclaimer)
 - [Referral Links](#referral-links)
@@ -511,6 +512,21 @@ Key Files and Directories:
 4. Push to the branch
 5. Create a Pull Request
 
+## Star History
+<a href="https://www.star-history.com/#51bitquant/ai-hedge-fund-crypto&Date" target="_blank" rel="noopener noreferrer">
+  <picture>
+    <source 
+      media="(prefers-color-scheme: dark)" 
+      srcset="https://api.star-history.com/svg?repos=51bitquant/ai-hedge-fund-crypto&type=Date&theme=dark" />
+    <source 
+      media="(prefers-color-scheme: light)" 
+      srcset="https://api.star-history.com/svg?repos=51bitquant/ai-hedge-fund-crypto&type=Date" />
+    <img 
+      alt="Star History Chart" 
+      src="https://api.star-history.com/svg?repos=51bitquant/ai-hedge-fund-crypto&type=Date" 
+      loading="lazy" />
+  </picture>
+</a>
 
 ## License
 

@@ -120,6 +120,7 @@ signals:
 - [创建自定义策略](#创建自定义策略)
 - [项目结构](#项目结构)
 - [贡献](#贡献)
+- [星标历史](#星标历史)
 - [许可证](#许可证)
 - [免责声明](#免责声明)
 - [推荐链接](#推荐链接)
@@ -482,6 +483,22 @@ ai-hedge-fund-crypto/
 3. 提交更改
 4. 推送到分支
 5. 创建Pull Request
+
+## 星标历史
+<a href="https://www.star-history.com/#51bitquant/ai-hedge-fund-crypto&Date" target="_blank" rel="noopener noreferrer">
+  <picture>
+    <source 
+      media="(prefers-color-scheme: dark)" 
+      srcset="https://api.star-history.com/svg?repos=51bitquant/ai-hedge-fund-crypto&type=Date&theme=dark" />
+    <source 
+      media="(prefers-color-scheme: light)" 
+      srcset="https://api.star-history.com/svg?repos=51bitquant/ai-hedge-fund-crypto&type=Date" />
+    <img 
+      alt="Star History Chart" 
+      src="https://api.star-history.com/svg?repos=51bitquant/ai-hedge-fund-crypto&type=Date" 
+      loading="lazy" />
+  </picture>
+</a>
 
 ## 许可证
 
