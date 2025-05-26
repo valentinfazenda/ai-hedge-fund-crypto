@@ -34,8 +34,8 @@ class RiskManagementNode(BaseNode):
             total_portfolio_value = portfolio.get("cash", 0.0) + sum(
                 portfolio.get("cost_basis", {}).get(t, 0.0) for t in portfolio.get("cost_basis", {}))
 
-            # Base limit is 20% of portfolio for any single position
-            position_limit = total_portfolio_value * 0.20
+            # Base limit is 40% of portfolio for any single position
+            position_limit = total_portfolio_value * 0.40
 
             # For existing positions, subtract current position value from limit
             remaining_position_limit = position_limit - current_position_value

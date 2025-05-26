@@ -18,6 +18,7 @@ dependencies = [
     { name = "langchain" },
     { name = "langchain-openai" },
     { name = "langgraph" },
+    { name = "openai" },
     { name = "matplotlib" },
     { name = "pandas" },
     { name = "pycryptodome" },

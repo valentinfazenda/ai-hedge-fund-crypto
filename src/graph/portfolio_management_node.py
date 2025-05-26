@@ -2,11 +2,12 @@ import os
 from typing import Dict, Any, List
 import json
 from langchain_core.messages import HumanMessage
-from langchain_core.prompts import ChatPromptTemplate
 from .base_node import BaseNode, AgentState
 from graph import show_agent_reasoning
-from llm import openai_llm, json_parser
+from src.llm import get_azure_openai_client
 
+
+client = get_azure_openai_client() 
 
 
 class PortfolioManagementNode(BaseNode):
@@ -86,95 +87,94 @@ def generate_trading_decision(
         model_provider: str):
     """Attempts to get a decision from the LLM with retry logic"""
     # Create the prompt template
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                """You are a portfolio manager making final trading decisions based on multiple tickers.
-  
-                Trading Rules:
-                - For long positions:
-                  * Only buy if you have available cash
-                  * Only sell if you currently hold long shares of that ticker
-                  * Sell quantity must be ≤ current long position shares
-                  * Buy quantity must be ≤ max_shares for that ticker
-  
-                - For short positions:
-                  * Only short if you have available margin (position value × margin requirement)
-                  * Only cover if you currently have short shares of that ticker
-                  * Cover quantity must be ≤ current short position shares
-                  * Short quantity must respect margin requirements
-  
-                - The max_shares values are pre-calculated to respect position limits
-                - Consider both long and short opportunities based on signals
-                - Maintain appropriate risk management with both long and short exposure
-  
-                Available Actions:
-                - "buy": Open or add to long position
-                - "sell": Close or reduce long position
-                - "short": Open or add to short position
-                - "cover": Close or reduce short position
-                - "hold": No action
-  
-                Inputs:
-                - signals_by_ticker: dictionary of ticker → signals
-                - max_shares: maximum shares allowed per ticker
-                - portfolio_cash: current cash in portfolio
-                - portfolio_positions: current positions (both long and short)
-                - current_prices: current prices for each ticker
-                - margin_requirement: current margin requirement for short positions (e.g., 0.5 means 50%)
-                - total_margin_used: total margin currently in use
-                """,
-            ),
-            (
-                "human",
-                """Based on the team's analysis, make your trading decisions for each ticker.
-  
-                Here are the signals by ticker:
-                {signals_by_ticker}
-  
-                Current Prices:
-                {current_prices}
-  
-                Maximum Shares Allowed For Purchases:
-                {max_shares}
-  
-                Portfolio Cash: {portfolio_cash}
-                Current Positions: {portfolio_positions}
-                Current Margin Requirement: {margin_requirement}
-                Total Margin Used: {total_margin_used}
-  
-                Output strictly in JSON with the following structure:
-                {{
-                  "decisions": {{
-                    "TICKER1": {{
-                      "action": "buy/sell/short/cover/hold",
-                      "quantity": float,
-                      "confidence": float between 0 and 100,
-                      "reasoning": "string"
-                    }},
-                    "TICKER2": {{
-                      ...
-                    }},
-                    ...
-                  }}
-                }}
-                """,
-            ),
-        ]
-    )
+    
+    system_prompt = """
+    You are a professional cryptocurrency portfolio manager operating in a 24 / 7, highly-volatile market.
+    Your mandate:
+    • Preserve capital and grow risk-adjusted return (Sharpe, Sortino) over the long run.  
+    • Size every trade so that the portfolio’s 1-day 99 % Expected Shortfall never exceeds a configurable limit.  
+    • Respect exchange margin, position and notional caps at all times.  
+    • Prefer liquidity, low slippage routes and stable-coin settlement when cash-like exposure is required.  
+    • React swiftly to regime shifts triggered by on-chain activity, funding-rate spikes, large liquidations or macro headlines.  
+    Think first, then answer only with a valid JSON object.
+    """
 
-    chain = prompt | openai_llm | json_parser
-    result = chain.invoke(
-        {
-            "signals_by_ticker": json.dumps(signals_by_ticker, indent=2),
-            "current_prices": json.dumps(current_prices, indent=2),
-            "max_shares": json.dumps(max_shares, indent=2),
-            "portfolio_cash": f"{portfolio.get('cash', 0.0):.2f}",
-            "portfolio_positions": json.dumps(portfolio.get('positions', {}), indent=2),
-            "margin_requirement": f"{portfolio.get('margin_requirement', 0.0):.2f}",
-            "total_margin_used": f"{portfolio.get('margin_used', 0.0):.2f}",
-        }
-    )
-    # print("the return result :", result)
-    return result
+    user_prompt = f"""
+    # Inputs
+    Signals by ticker
+    {json.dumps(signals_by_ticker, indent=2)}
+
+    Real-time mid-prices
+    {json.dumps(current_prices, indent=2)}
+
+    Max size per ticker (absolute units)
+    {json.dumps(max_shares, indent=2)}
+
+    Portfolio snapshot
+    cash: {portfolio.get('cash', 0.0):.2f}
+    positions: {json.dumps(portfolio.get('positions', {}), indent=2)}
+    margin_requirement: {portfolio.get('margin_requirement', 0.0):.2f}
+    margin_used: {portfolio.get('margin_used', 0.0):.2f}
+
+    # Decision rubric (follow in order)
+    1. Build a conviction score per ticker combining:
+    – multi-time-frame consensus strength  
+    – signal confidence weighting (higher resolution ⇢ higher weight)  
+    – momentum direction & magnitude  
+    – recent realised / implied volatility and funding  
+    – liquidity & slippage cost
+    2. Reject low-conviction (<30 %) ideas unless risk can be hedged cheaply.
+    3. When volatility regime >4×12 h average, cut gross exposure by at least 30 %.  
+    5. Use cash/stable-coin buffers to maintain ≥20 % unencumbered equity.
+    6. If a price drops >2 % in <10 min and signals turn bearish, prioritise exit or short.
+    7. If a price rises >2 % in <10 min on bullish consensus, allow pyramiding up to cap.
+    8. Keep JSON output deterministic, no extra keys, floats with max 6 decimals.
+
+    
+    Provide the answer without any additional text or explanations. The answer will be processed by the system as a json, any other format will be rejected.
+
+    Output strictly in JSON with the structure:
+    {{ "decisions": {{ 
+        "TICKER": {{
+        "action": "buy/sell/short/cover/hold",
+        "quantity": float,
+        "confidence": float,
+        "reasoning": "string"
+        }},
+        ...
+    }} }}
+    """
+
+    max_retries = 10
+    for attempt in range(1, max_retries + 1):
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+
+        content = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
+
+        if not content:
+            print(f"⚠️ Attempt {attempt}: Empty response from LLM")
+            continue
+
+        try:
+            result = json.loads(content)
+        except json.JSONDecodeError:
+            print(f"⚠️ Attempt {attempt}: Invalid JSON response:\n{content}")
+            continue
+
+        # Validate structure
+        decisions = result.get("decisions")
+        if isinstance(decisions, dict) and all(
+            isinstance(v, dict) and "action" in v and "quantity" in v
+            for v in decisions.values()
+        ):
+            return result
+
+        print(f"⚠️ Attempt {attempt}: Malformed decisions object:\n{decisions}")
+
+    raise ValueError("❌ Failed to get a valid response from LLM after multiple retries.")

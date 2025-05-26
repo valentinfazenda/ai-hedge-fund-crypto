@@ -1,15 +1,12 @@
 import os
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_openai import ChatOpenAI
+from openai import AzureOpenAI
+from dotenv import load_dotenv
 
+load_dotenv()
 
-openai_llm = ChatOpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    model="gpt-4o-mini",  # or "gpt-4" if you have access
-    timeout=30,           # timeout in seconds (set to your desired limit)
-    max_retries=3
-)
-
-json_parser = JsonOutputParser()
-
-__all__ = ["openai_llm", "json_parser"]
+def get_azure_openai_client() -> AzureOpenAI:
+    return AzureOpenAI(
+        azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+        api_key=os.environ["AZURE_OPENAI_API_KEY"],
+        api_version="2024-02-01",
+    )
