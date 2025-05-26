@@ -86,6 +86,7 @@ class Backtester:
         `quantity` is the number of shares the agent wants to buy/sell/short/cover.
         We will only trade integer shares to keep it simple.
         """
+        FEE_RATE = 0.001
         if quantity <= 0.0:
             return 0.0
 
@@ -93,7 +94,7 @@ class Backtester:
         position = self.portfolio["positions"][ticker]
 
         if action == "buy":
-            cost = quantity * current_price
+            cost = quantity * current_price * (1 + FEE_RATE)
             if cost <= self.portfolio["cash"]:
                 # Weighted average cost basis for the new total
                 old_shares = position["long"]
@@ -138,8 +139,9 @@ class Backtester:
                 self.portfolio["realized_gains"][ticker]["long"] += realized_gain
 
                 position["long"] -= quantity
-                self.portfolio["cash"] += quantity * current_price
-
+                proceeds_after_fee = quantity * current_price * (1 - FEE_RATE)
+                self.portfolio["cash"] += proceeds_after_fee
+                
                 if position["long"] == 0.0:
                     position["long_cost_basis"] = 0.0
 
@@ -152,7 +154,7 @@ class Backtester:
               2) Post margin_required = proceeds * margin_ratio
               3) Net effect on cash = +proceeds - margin_required
             """
-            proceeds = current_price * quantity
+            proceeds = quantity * current_price * (1 - FEE_RATE)
             margin_required = proceeds * self.portfolio["margin_requirement"]
             if margin_required <= self.portfolio["cash"]:
                 # Weighted average short cost basis
@@ -185,7 +187,7 @@ class Backtester:
                     max_quantity = 0.0
 
                 if max_quantity > 0.0:
-                    proceeds = current_price * max_quantity
+                    proceeds = quantity * current_price * (1 - FEE_RATE)
                     margin_required = proceeds * margin_ratio
 
                     old_short_shares = position["short"]
