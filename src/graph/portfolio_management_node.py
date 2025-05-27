@@ -124,11 +124,11 @@ def generate_trading_decision(
     – recent realised / implied volatility and funding  
     – liquidity & slippage cost
     2. Reject low-conviction (<30 %) ideas unless risk can be hedged cheaply.
-    3. When volatility regime >4×12 h average, cut gross exposure by at least 30 %.  
+    3. If volatility regime exceeds 4× its 12-hour average and the price is dropping sharply, aggressively reduce gross exposure by at least 30 %. Do not hesitate to exit all positions if signals turn bearish.
+    4. If volatility is high but price is rising steadily across timeframes with strong bullish signals, maintain or increase exposure within position limits.
     5. Use cash/stable-coin buffers to maintain ≥20 % unencumbered equity.
     6. If a price drops >2 % in <10 min and signals turn bearish, prioritise exit or short.
-    7. If a price rises >2 % in <10 min on bullish consensus, allow pyramiding up to cap.
-    8. Keep JSON output deterministic, no extra keys, floats with max 6 decimals.
+    7. Keep JSON output deterministic, no extra keys, floats with max 6 decimals.
 
     
     Provide the answer without any additional text or explanations. The answer will be processed by the system as a json, any other format will be rejected.
