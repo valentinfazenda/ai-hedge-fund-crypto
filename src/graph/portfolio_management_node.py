@@ -136,7 +136,7 @@ def generate_trading_decision(
     Output strictly in JSON with the structure:
     {{ "decisions": {{ 
         "TICKER": {{
-        "action": "buy/sell/short/cover/hold",
+        "action": "buy/sell",
         "quantity": float,
         "confidence": float,
         "reasoning": "string"

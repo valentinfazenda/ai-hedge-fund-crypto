@@ -1,4 +1,4 @@
-mode: live # backtest, live
+mode: live
 start_date: 2025-05-23
 end_date: 2025-05-24
 primary_interval: 5m
@@ -8,7 +8,7 @@ show_reasoning: false
 show_agent_graph: true
 signals:
   intervals: [1h, "2h", "30m", "15m", "5m", "12h"]
-  tickers: ["ETHUSDT"]
+  tickers: ["ETHUSDC"]
   strategies: ['MacdStrategy']
 # , "RSIStrategy"]
 

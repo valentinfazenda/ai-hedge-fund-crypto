@@ -25,6 +25,7 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pyyaml" },
     { name = "pyyml" },
+    { name = "python-binance" },
     { name = "requests" },
     { name = "tabulate" },
     { name = "websockets" },

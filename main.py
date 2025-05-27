@@ -6,9 +6,8 @@ from src.utils import settings
 from datetime import datetime
 from src.agent import Agent
 from src.backtest.backtester import Backtester
+from src.utils.dydx_client import get_dydx_client
 
-
-load_dotenv()
 
 if __name__ == "__main__":
 
@@ -63,4 +62,49 @@ if __name__ == "__main__":
             show_agent_graph=settings.show_agent_graph
         )
         # print(result)
+        
+        
         print(result.get('decisions'))
+        
+        dydx_client = get_dydx_client()
+        decisions = result.get("decisions", {})
+
+        for symbol, decision in decisions.items():
+            action = decision.get("action")
+            quantity = float(decision.get("quantity", 0.0))
+
+            # Map symbol from "ETHUSDT" ➝ "ETH-USD"
+            dydx_market = symbol.replace("USDT", "USD").replace("USDC", "USD")
+
+            if quantity <= 0.0:
+                continue
+
+            if action == "hold":
+                print(f"ℹ️ {symbol}: HOLD – no action taken.")
+                continue
+
+            side = None
+            if action in ("buy", "cover"):
+                side = "buy"
+            elif action in ("sell", "short"):
+                side = "sell"
+
+            if side:
+                try:
+                    print(f"🟢 Placing {action.upper()} on dYdX: {dydx_market} – Qty: {quantity}")
+                    response = dydx_client.private.create_order(
+                        position_id=dydx_client.private.get_account()["account"]["positionId"],
+                        market=dydx_market,
+                        side=side,
+                        type="market",
+                        size=str(quantity),  # must be str for dydx
+                        price="0",  # ignored for market
+                        limit_fee="0.005",  # 0.05% max taker fee
+                        cancel_after="day",
+                        time_in_force="FOK"
+                    )
+                    print(f"✅ dYdX {action.upper()} executed: ID = {response['order']['id']}")
+                except Exception as e:
+                    print(f"❌ Failed to execute {action.upper()} on dYdX for {symbol}: {str(e)}")
+            else:
+                print(f"⚠️ Unknown action '{action}' for {symbol}. Skipping.")
