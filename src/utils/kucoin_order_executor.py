@@ -158,9 +158,11 @@ def get_kucoin_spot_portfolio(client):
 def build_portfolio_from_kucoin_assets(settings):
     kucoin_assets = get_kucoin_spot_portfolio(spot_client)
     portfolio = {
-        "cash": "",
+        "cash": 0.0,
+        "USDC": 0.0,
         "positions": {},
         "realized_gains": {}
+        
     }
 
     tickers = set(settings.signals.tickers)
@@ -169,44 +171,16 @@ def build_portfolio_from_kucoin_assets(settings):
         currency = asset["currency"]
         balance = float(asset["balance"])
 
-        if currency == "USDC":  # adapt if USDC or others also considered cash
+        if currency == "USDC":
             portfolio["cash"] = balance
+            portfolio["USDC"] = balance
             continue
-
-        ticker = f"{currency}-USDC"
-        if ticker not in tickers:
+        
+        elif f"{currency}USDC" in tickers:
+            portfolio["positions"][f"{currency}USDC"] = balance
             continue
-
-        portfolio["positions"][ticker] = {
-            "long": balance,
-            "short": 0.0,
-            "long_cost_basis": 0.0,
-            "short_cost_basis": 0.0,
-            "short_margin_used": 0.0
-        }
-
-        portfolio["realized_gains"][ticker] = {
-            "long": 0.0,
-            "short": 0.0
-        }
-
-    # Ensure missing tickers from settings are initialized
-    for ticker in tickers:
-        if ticker not in portfolio["positions"]:
-            portfolio["positions"][ticker] = {
-                "long": 0.0,
-                "short": 0.0,
-                "long_cost_basis": 0.0,
-                "short_cost_basis": 0.0,
-                "short_margin_used": 0.0
-            }
-            portfolio["realized_gains"][ticker] = {
-                "long": 0.0,
-                "short": 0.0
-            }
 
     return portfolio
-
 
 
 def to_kucoin_symbol(symbol: str) -> str:
