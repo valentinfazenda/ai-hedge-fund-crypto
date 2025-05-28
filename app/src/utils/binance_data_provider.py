@@ -11,6 +11,7 @@ from pathlib import Path
 
 from src.gateway.binance.client import Client
 from src.utils.constants import COLUMNS, NUMERIC_COLUMNS
+import os
 
 
 class BinanceDataProvider:
@@ -29,7 +30,7 @@ class BinanceDataProvider:
         self.client = Client(api_key=api_key, api_secret=api_secret)
 
         # Create cache directory if it doesn't exist
-        self.cache_dir = Path("./cache")
+        self.cache_dir = Path(os.environ.get("CACHE_DIR", "/tmp/cache"))
         self.cache_dir.mkdir(exist_ok=True)
 
     def _format_timeframe(self, timeframe: str) -> str:

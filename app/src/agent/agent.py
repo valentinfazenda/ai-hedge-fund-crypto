@@ -46,7 +46,7 @@ class Agent:
             for strategy_name in strategies:
                 file_path += strategy_name + "_"
                 file_path += "graph.png"
-            save_graph_as_png(agent, file_path)
+            # save_graph_as_png(agent, file_path)
 
         final_state = agent.invoke(
             {
