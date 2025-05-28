@@ -2,7 +2,7 @@ mode: live
 start_date: 2025-05-23
 end_date: 2025-05-24
 primary_interval: 5m
-initial_cash: 100
+initial_cash: 10
 margin_requirement: 0.1
 show_reasoning: false
 show_agent_graph: true
