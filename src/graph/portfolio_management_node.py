@@ -145,6 +145,8 @@ def generate_trading_decision(
     }} }}
     """
 
+    print (f" User prompt: {user_prompt}")
+    
     max_retries = 10
     for attempt in range(1, max_retries + 1):
         response = client.chat.completions.create(
