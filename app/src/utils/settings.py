@@ -34,7 +34,7 @@ class Settings(BaseSettings):
         return self
 
 
-def load_settings(yaml_path: str = "config.yaml") -> Settings:
+def load_settings(yaml_path: str = "app/config.yaml") -> Settings:
     with open(yaml_path, "r") as f:
         yaml_data = yaml.safe_load(f)
     return Settings(**yaml_data)

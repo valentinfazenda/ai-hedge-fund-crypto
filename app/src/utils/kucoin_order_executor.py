@@ -154,33 +154,128 @@ def get_kucoin_spot_portfolio(client):
         print(f"[❌] Failed to fetch KuCoin portfolio: {e}")
         return []
 
+def get_kucoin_futures_positions():
+    positions = []
 
+    try:
+        endpoint = "/api/v1/positions"
+        url = FUTURES_BASE_URL + endpoint
+        headers = generate_futures_headers(endpoint, "GET")
+        resp = requests.get(url, headers=headers)
+
+        if resp.status_code != 200:
+            print(f"[❌] Failed to fetch futures positions: {resp.text}")
+            return positions
+
+        data = resp.json().get("data", [])
+        for pos in data:
+            qty = float(pos["currentQty"])
+            if qty == 0:
+                continue
+
+            symbol = pos["symbol"].replace("M", "")
+            entry_price = float(pos["entryPrice"])
+            margin = float(pos["posMargin"])
+
+            positions.append({
+                "symbol": symbol,
+                "side": "short" if qty < 0 else "long",
+                "quantity": abs(qty),
+                "entry_price": entry_price,
+                "margin_used": margin
+            })
+
+        return positions
+
+    except Exception as e:
+        print(f"[❌] Futures position retrieval error: {e}")
+        return positions
+    
+    
 def build_portfolio_from_kucoin_assets(settings):
-    kucoin_assets = get_kucoin_spot_portfolio(spot_client)
     portfolio = {
         "cash": 0.0,
-        "USDC": 0.0,
         "positions": {},
         "realized_gains": {}
-        
     }
 
     tickers = set(settings.signals.tickers)
 
-    for asset in kucoin_assets:
+    # === Spot Wallet ===
+    spot_assets = get_kucoin_spot_portfolio(spot_client)
+    for asset in spot_assets:
         currency = asset["currency"]
         balance = float(asset["balance"])
 
         if currency == "USDC":
             portfolio["cash"] = balance
-            portfolio["USDC"] = balance
-            continue
-        
-        elif f"{currency}USDC" in tickers:
-            portfolio["positions"][f"{currency}USDC"] = balance
             continue
 
+        symbol = f"{currency}USDC"
+        if symbol not in tickers:
+            continue
+        try:
+            page = 1
+            raw_fills = spot_client.get_fills(
+                symbol=to_kucoin_symbol(symbol),
+                side='buy',
+                trade_type='TRADE',
+                page=page,
+                limit=500,
+            )
+            
+            fills = raw_fills["items"]
+
+            total_qty = 0.0
+            total_cost = 0.0
+            for fill in fills:
+                qty = float(fill['size'])
+                price = float(fill['price'])
+                total_qty += qty
+                total_cost += qty * price
+
+            avg_cost = total_cost / total_qty if total_qty > 0 else 0.0
+
+        except Exception as e:
+            print(f"[⚠️] Failed to get fills for {symbol}: {e}")
+            avg_cost = 0.0
+
+        portfolio["positions"][symbol] = {
+            "long": balance,
+            "short": 0.0,
+            "long_cost_basis": avg_cost,
+            "short_cost_basis": 0.0,
+            "short_margin_used": 0.0
+        }
+
+
+    # === Futures Wallet ===
+    futures_positions = get_kucoin_futures_positions()
+    for pos in futures_positions:
+        symbol = pos["symbol"]
+        if symbol not in tickers:
+            continue
+
+        if symbol not in portfolio["positions"]:
+            portfolio["positions"][symbol] = {
+                "long": 0.0,
+                "short": 0.0,
+                "long_cost_basis": 0.0,
+                "short_cost_basis": 0.0,
+                "short_margin_used": 0.0
+            }
+
+        if pos["side"] == "short":
+            portfolio["positions"][symbol]["short"] = pos["quantity"]
+            portfolio["positions"][symbol]["short_cost_basis"] = pos["entry_price"]
+            portfolio["positions"][symbol]["short_margin_used"] = pos["margin_used"]
+        else:
+            # Rare but possible (long futures position)
+            portfolio["positions"][symbol]["long"] += pos["quantity"]
+            portfolio["positions"][symbol]["long_cost_basis"] = pos["entry_price"]
+
     return portfolio
+
 
 
 def to_kucoin_symbol(symbol: str) -> str:
