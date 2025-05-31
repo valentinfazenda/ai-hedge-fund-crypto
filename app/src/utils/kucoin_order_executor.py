@@ -214,27 +214,45 @@ def build_portfolio_from_kucoin_assets(settings):
         symbol = f"{currency}USDC"
         if symbol not in tickers:
             continue
+
         try:
             page = 1
-            raw_fills = spot_client.get_fills(
-                symbol=to_kucoin_symbol(symbol),
-                side='buy',
-                trade_type='TRADE',
-                page=page,
-                limit=500,
-            )
-            
-            fills = raw_fills["items"]
+            active_fills = []
+            accumulated_qty = 0.0
 
-            total_qty = 0.0
-            total_cost = 0.0
-            for fill in fills:
-                qty = float(fill['size'])
-                price = float(fill['price'])
-                total_qty += qty
-                total_cost += qty * price
+            while accumulated_qty < balance:
+                raw_fills = spot_client.get_fills(
+                    symbol=to_kucoin_symbol(symbol),
+                    side='buy',
+                    trade_type='TRADE',
+                    page=page,
+                    limit=500,
+                )
 
+                fills = raw_fills["items"]
+                if not fills:
+                    break
+
+                for fill in fills:
+                    qty = float(fill['size'])
+                    if accumulated_qty + qty > balance:
+                        qty = balance - accumulated_qty
+
+                    active_fills.append({
+                        "price": float(fill['price']),
+                        "qty": qty
+                    })
+
+                    accumulated_qty += qty
+                    if accumulated_qty >= balance:
+                        break
+
+                page += 1
+
+            total_qty = sum(f["qty"] for f in active_fills)
+            total_cost = sum(f["qty"] * f["price"] for f in active_fills)
             avg_cost = total_cost / total_qty if total_qty > 0 else 0.0
+
 
         except Exception as e:
             print(f"[⚠️] Failed to get fills for {symbol}: {e}")
