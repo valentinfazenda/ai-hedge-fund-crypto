@@ -123,12 +123,16 @@ def generate_trading_decision(
     – momentum direction & magnitude  
     – recent realised / implied volatility and funding  
     – liquidity & slippage cost
-    2. Reject low-conviction (<30 %) ideas unless risk can be hedged cheaply.
-    3. If volatility regime exceeds 4× its 12-hour average and the price is dropping sharply, aggressively reduce gross exposure by at least 30 %. Do not hesitate to exit all positions if signals turn bearish.
-    4. If volatility is high but price is rising steadily across timeframes with strong bullish signals, maintain or increase exposure within position limits.
-    5. Use cash/stable-coin buffers to maintain ≥20 % unencumbered equity.
-    6. If a price drops >2 % in <10 min and signals turn bearish, prioritise exit or short.
-    7. Keep JSON output deterministic, no extra keys, floats with max 6 decimals.
+    2. Default action "hold". **Buy** only if conviction ≥50 AND  
+        • price +1 % in 5 m OR +2 % in 15 m, _or_  
+        • price range 30 m <0 .4 % and bullish consensus.  
+        Otherwise keep "hold".
+    3. **Sell** only if long position exists AND  
+        • price ≥ long_cost_basis×1.05 (profit), _or_  
+        • price −2 % in 30 m OR −4 % in 1 h/2 h with bearish signals.
+    4. If volatility_regime >4×12 h avg AND price dropping fast → cut gross ≥30 %; exit fully if bearish.
+    5. Keep ≥20 % free equity (cash/stable).
+    7. Deterministic JSON, floats ≤5 decimals, no extra keys.
 
     
     Provide the answer without any additional text or explanations. The answer will be processed by the system as a json, any other format will be rejected.
@@ -136,7 +140,7 @@ def generate_trading_decision(
     Output strictly in JSON with the structure:
     {{ "decisions": {{ 
         "TICKER": {{
-        "action": "buy/sell/none",
+        "action":"buy"|"sell"|"hold",
         "quantity": float,
         "confidence": float,
         "reasoning": "string"
