@@ -260,10 +260,7 @@ def build_portfolio_from_kucoin_assets(settings):
 
         portfolio["positions"][symbol] = {
             "long": balance,
-            "short": 0.0,
-            "long_cost_basis": avg_cost,
-            "short_cost_basis": 0.0,
-            "short_margin_used": 0.0
+            "long_cost_basis": avg_cost
         }
 
 
