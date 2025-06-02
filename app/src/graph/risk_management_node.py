@@ -13,6 +13,7 @@ class RiskManagementNode(BaseNode):
         data['name'] = "RiskManagementNode"
 
         portfolio = data.get("portfolio", {})
+        margin_requirement = portfolio.get("margin_requirement", 0.0)
         tickers = data.get("tickers", [])
         primary_interval: Optional[Interval] = data.get("primary_interval")
 
@@ -35,13 +36,13 @@ class RiskManagementNode(BaseNode):
                 portfolio.get("cost_basis", {}).get(t, 0.0) for t in portfolio.get("cost_basis", {}))
 
             # Base limit is 40% of portfolio for any single position
-            position_limit = total_portfolio_value * 0.40
+            position_limit = total_portfolio_value * 0.40 * (1/margin_requirement if margin_requirement > 0 else 1)
 
             # For existing positions, subtract current position value from limit
             remaining_position_limit = position_limit - current_position_value
 
             # Ensure we don't exceed available cash
-            max_position_size = min(remaining_position_limit, portfolio.get("cash", 0.0))
+            max_position_size = min(remaining_position_limit, (portfolio.get("cash", 0.0)* (1/margin_requirement if margin_requirement > 0 else 1)))
 
             risk_analysis[ticker] = {
                 "remaining_position_limit": float(max_position_size),
