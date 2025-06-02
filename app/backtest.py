@@ -14,6 +14,7 @@ if __name__ == "__main__":
     backtester = Backtester(
         primary_interval=settings.primary_interval,
         intervals=settings.signals.intervals,
+        initial_margin_requirement=settings.margin_requirement,
         tickers=settings.signals.tickers,
         start_date=settings.start_date,
         end_date=settings.end_date,

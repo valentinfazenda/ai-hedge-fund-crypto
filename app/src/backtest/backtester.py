@@ -187,7 +187,7 @@ class Backtester:
                     max_quantity = 0.0
 
                 if max_quantity > 0.0:
-                    proceeds = quantity * current_price * (1 - FEE_RATE)
+                    proceeds = current_price * max_quantity
                     margin_required = proceeds * margin_ratio
 
                     old_short_shares = position["short"]

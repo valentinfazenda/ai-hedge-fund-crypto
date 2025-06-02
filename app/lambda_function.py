@@ -17,6 +17,7 @@ def lambda_handler(event, context):
             intervals=settings.signals.intervals,
             tickers=settings.signals.tickers,
             start_date=settings.start_date,
+            initial_margin_requirement=settings.margin_requirement,
             end_date=settings.end_date,
             initial_capital=settings.initial_cash,
             strategies=settings.signals.strategies,

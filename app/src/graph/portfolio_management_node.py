@@ -87,7 +87,6 @@ def generate_trading_decision(
         model_provider: str):
     """Attempts to get a decision from the LLM with retry logic"""
     # Create the prompt template
-    print (f"Portfolio: {portfolio}")
     
     system_prompt = """
     You are a professional cryptocurrency portfolio manager operating in a 24 / 7, highly-volatile market.
@@ -107,90 +106,80 @@ def generate_trading_decision(
     - current_prices: current prices for each ticker
     - margin_requirement: current margin requirement for short positions (e.g., 0.5 means 50%)
     - total_margin_used: total margin currently in use
+    
+    Available Actions:
+    - "buy": Open or add to long position
+    - "short": Open or add to short position
+    - "sell": Close or reduce long position
+    - "cover": Close or reduce short position
+    - "hold": No action
+    
+    Rules:
+    - For long positions:
+        * Only buy if you have available cash
+        * Only sell if you currently hold long shares of that ticker
+        * Sell quantity must be ≤ current long position shares
+        * Buy quantity must be ≤ max_shares for that ticker
+
+    - For short positions:
+        * Only short if you have available margin (position value × margin requirement)
+        * Only cover if you currently have short shares of that ticker
+        * Cover quantity must be ≤ current short position shares
+        * Short quantity must respect margin requirements
+    
+    Build a **conviction score** per ticker combining:
+        – multi-time-frame consensus  
+        – signal confidence (higher resolution ⇒ higher weight)  
+        – momentum direction & strength  
+        – realised/implied volatility, funding 
+    
     """
 
     user_prompt = f"""
     # Inputs
-    Signals by ticker
+    Here are the signals by ticker:
     {json.dumps(signals_by_ticker, indent=2)}
 
-    Real-time mid-prices
+    Current Prices:
     {json.dumps(current_prices, indent=2)}
 
-    Max size per ticker (absolute units)
+    Maximum Shares Allowed For Purchases:
     {json.dumps(max_shares, indent=2)}
 
-    Portfolio snapshot
-    cash: 
-    {portfolio.get('cash', 0.0):.2f}
-    positions: 
-    {json.dumps(portfolio.get('positions', {}), indent=2)}
-    margin_requirement: 
-    {portfolio.get('margin_requirement', 0.0):.2f}
-    margin_used: 
-    {portfolio.get('margin_used', 0.0):.2f}
+    Portfolio Cash: {portfolio.get('cash', 0.0):.2f}
+    Current Positions: {json.dumps(portfolio.get('positions', {}), indent=2)}
+    Current Margin Requirement: {portfolio.get('margin_requirement', 0.0):.2f}
+    Total Margin Used: {portfolio.get('margin_used', 0.0):.2f}
+    
+    Consider both buy and short opportunities based on signals
 
-    ⚠️ Decisions are margin-based:
-    - **Trades can exceed available cash**, as long as margin constraints are respected.
-    - Ensure all actions comply with **available margin**, **risk rules**, and **volatility regime constraints**.
+    **Buy** only if conviction ≥ 50.
+    
+    **Short** only if conviction ≥ 50.
 
-    Available Actions:
-    - "buy": Open or add to long position
-    - "sell": Close or reduce long position
-    - "short": Open or add to short position
-    - "cover": Close or reduce short position
-    - "hold": No action
-
-    Rules:
-    - For long positions:
-    * Only buy if enough **available cash or margin**.
-    * Only sell if currently holding long shares.
-    * Sell quantity ≤ current long position.
-    * Buy quantity ≤ max_shares[ticker].
-
-    - For short positions:
-    * Only short if sufficient **available margin**.
-    * Only cover if currently holding short shares.
-    * Cover quantity ≤ current short position.
-    * Short quantity must respect margin requirements (position value × margin_requirement).
-
-    # Decision rubric (follow strictly, in order)
-    1. Build a **conviction score** per ticker combining:
-    – multi-time-frame consensus  
-    – signal confidence (higher resolution ⇒ higher weight)  
-    – momentum direction & strength  
-    – realised/implied volatility, funding  
-    – liquidity & slippage cost
-
-    2. **Buy** only if conviction ≥ 50 AND    
-    Else: "hold".
-
-    3. **Sell** if long position exists AND  
-    • price ≥ cost_basis × 1.03 (profit >3%), _or_  
-    • price −4% in 30m OR 1h/2h with bearish signal
-
-    4. Keep ≥20% free equity (cash or stable assets).
-
-    5. **Short** only if conviction ≥ 50
-    Else: "hold".
-
-    6. **Cover** if short exists AND  
-    • price ≤ cost_basis × 0.97 (profit >3%), _or_  
-    • price +2% in 30m OR +4% in 1h/2h with bullish signal
+    **Sell** if long position exists AND if conviction ≥ 50 AND
+        • price ≥ cost_basis × 1.03 (profit >3%) AND 
+        • price −4% in 30m OR 1h/2h with bearish signal
+    
+    **Cover** if short exists AND if conviction ≥ 50 AND 
+        • price ≤ cost_basis × 0.97 (profit >3%), _or_  
+        • price +2% in 30m OR +4% in 1h/2h with bullish signal
 
     # Output format:
     Return only valid JSON with this strict structure:
 
     {{ "decisions": {{ 
         "TICKER": {{
-        "action":"buy"|"sell"|"short"|"cover"|"hold",
+        "action":"buy"|"short"|"sell"|"cover"|"hold",
         "quantity": float,
-        "confidence": float,
+        "confidence": float between 0 and 100,
         "reasoning": "string"
         }},
         ...
     }} }}
     """
+    
+    print(f"Prompting {user_prompt}")
     
     max_retries = 10
     for attempt in range(1, max_retries + 1):

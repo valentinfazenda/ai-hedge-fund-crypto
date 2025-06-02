@@ -155,7 +155,7 @@ def _cost_basis(symbol: str, qty: float, is_long: bool) -> float:
 
 
 def build_portfolio_from_binance_assets(settings):
-    port = {"cash": 0.0, "positions": {}, "realized_gains": {}}
+    port = {"cash": 0.0, "positions": {}, "realized_gains": {}, "margin_requirement": settings.margin_requirement}
     tickers = set(settings.signals.tickers)
 
     acc = bn_client.get_margin_account()
