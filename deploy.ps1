@@ -1,12 +1,17 @@
 $env:DOCKER_BUILDKIT = "0"
 
-$imageName = "lambda/crypto-bot"
-$awsAccountId = "654654340294"
-$region = "eu-north-1"
-$ecrRepo = "$awsAccountId.dkr.ecr.$region.amazonaws.com/$imageName"
+$image     = 'lambda/crypto-bot'
+$accountId = '654654340294'
+$region    = 'eu-north-1'
+$registry  = "$accountId.dkr.ecr.$region.amazonaws.com"
+$repoUri   = "$registry/$image"
 
-aws ecr get-login-password --region $region | docker login --username AWS --password-stdin "$awsAccountId.dkr.ecr.$region.amazonaws.com"
+aws ecr get-login-password --region $region |
+    docker login --username AWS --password-stdin $registry
+if ($LASTEXITCODE) { exit 1 }
 
-docker build -t $imageName .
-docker tag "$imageName:latest" "$ecrRepo:latest"
-docker push "$ecrRepo:latest"
+docker build -t "$repoUri" .
+if ($LASTEXITCODE) { exit 1 }
+
+docker push "$repoUri"
+if ($LASTEXITCODE) { exit 1 }
