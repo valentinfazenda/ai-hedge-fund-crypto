@@ -17,7 +17,7 @@ class Agent:
             strategies: List[str],
             show_reasoning: bool = False,
             show_agent_graph: bool = False,
-            model_name: str = "gpt-4o",
+            model_name: str = "gpt-4.1",
             model_provider: str = "OpenAI"
     ):
         """

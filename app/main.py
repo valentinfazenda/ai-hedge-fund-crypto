@@ -5,7 +5,6 @@ from src.utils import settings
 from datetime import datetime
 from src.agent import Agent
 from src.backtest.backtester import Backtester
-# from src.utils.kucoin_order_executor import place_kucoin_order, build_portfolio_from_kucoin_assets
 from src.utils.binance_order_executor import place_binance_order, build_portfolio_from_binance_assets
 
 
@@ -28,7 +27,6 @@ if __name__ == "__main__":
         performance_df = backtester.analyze_performance()
 
     else:
-        # portfolio = build_portfolio_from_kucoin_assets(settings)
         portfolio = build_portfolio_from_binance_assets(settings)
 
         result = Agent.run(
@@ -48,5 +46,4 @@ if __name__ == "__main__":
         decisions = result.get("decisions", {})
 
         for symbol, decision in decisions.items():
-            # place_kucoin_order(symbol, decision["action"], decision["quantity"])
             place_binance_order(symbol, decision["action"], decision["quantity"])

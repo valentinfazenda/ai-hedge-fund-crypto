@@ -20,7 +20,7 @@ class Backtester:
             end_date: datetime,
             initial_capital: float,
             strategies: List[str],
-            model_name: str = "gpt-4o",
+            model_name: str = "gpt-4.1",
             model_provider: str = "OpenAI",
             initial_margin_requirement: float = 0.0,
             show_agent_graph: bool = False,
