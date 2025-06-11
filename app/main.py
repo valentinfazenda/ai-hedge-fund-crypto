@@ -46,4 +46,4 @@ if __name__ == "__main__":
         decisions = result.get("decisions", {})
 
         for symbol, decision in decisions.items():
-            place_binance_order(symbol, decision["action"], decision["quantity"])
+            place_binance_order(symbol,  decision["operation"], decision["quantity"])

@@ -37,34 +37,37 @@ def adjust_quantity_margin(symbol: str, quantity: float) -> float:
 def to_binance_symbol(symbol: str) -> str:
     return symbol.replace("-", "").upper()
 
+def _price(symbol: str) -> float:
+    return float(bn_client.get_symbol_ticker(symbol=symbol)["price"])
 
 # === EXECUTION ===
 def place_binance_order(
     symbol: str,
-    action: str,
+    operation: str,          # open_long | close_long | open_short | close_short | hold
     quantity: float,
     isolated: bool = False,
 ):
     symbol = to_binance_symbol(symbol)
     qty = adjust_quantity_margin(symbol, quantity)
-    if (action=='hold'):
-        print(f"[SKIP] {symbol} {action.upper()} – no action taken.")
+
+    if operation == "hold":
+        print(f"[SKIP] {symbol} HOLD – no action.")
         return
     if qty <= 0:
-        print(f"[SKIP] {symbol} {action.upper()} – qty too low.")
+        print(f"[SKIP] {symbol} {operation.upper()} – qty too low.")
         return
 
-    side_map = {
-        "buy": ("BUY", "MARGIN_BUY"),
-        "sell": ("SELL", "AUTO_REPAY"),
-        "short": ("SELL", "MARGIN_BUY"),
-        "cover": ("BUY", "AUTO_REPAY"),
+    op_map = {
+        "open_long":  ("BUY",  "MARGIN_BUY"),
+        "close_long": ("SELL", "AUTO_REPAY"),
+        "open_short": ("SELL", "MARGIN_BUY"),
+        "close_short":("BUY",  "AUTO_REPAY"),
     }
-    if action not in side_map:
-        print(f"[❓] Unknown action '{action}' for {symbol}.")
+    if operation not in op_map:
+        print(f"[❓] Unknown operation '{operation}' for {symbol}.")
         return
 
-    side, effect = side_map[action]
+    side, effect = op_map[operation]
     try:
         res = bn_client.create_margin_order(
             symbol=symbol,
@@ -74,68 +77,9 @@ def place_binance_order(
             sideEffectType=effect,
             isIsolated="TRUE" if isolated else "FALSE",
         )
-        print(
-            f"[✅] Margin {action.upper()} {symbol} | Qty {qty} | ID {res.get('orderId','N/A')}"
-        )
+        print(f"[✅] {operation.upper()} {symbol} | Qty {qty} | ID {res.get('orderId','N/A')}")
     except Exception as e:
         print(f"[❌] Margin execution error: {e}")
-
-
-# === PORTFOLIO ===
-def get_binance_margin_portfolio():
-    try:
-        acc = bn_client.get_margin_account()
-        assets = [
-            {
-                "asset": a["asset"],
-                "free": float(a["free"]),
-                "borrowed": float(a["borrowed"]),
-                "interest": float(a["interest"]),
-                "net": float(a["netAsset"]),
-            }
-            for a in acc["userAssets"]
-            if float(a["free"]) or float(a["borrowed"])
-        ]
-        if not assets:
-            print("[ℹ️] Margin Wallet empty.")
-        else:
-            print("📊 Binance MARGIN Portfolio:")
-            for a in assets:
-                print(
-                    f" - {a['asset']}: Free={a['free']}, Borrowed={a['borrowed']}, Net={a['net']}"
-                )
-        return assets
-    except Exception as e:
-        print(f"[❌] Portfolio fetch error: {e}")
-        return []
-
-
-def get_binance_margin_positions():
-    pos = []
-    try:
-        # open margin orders (cross + isolated)
-        orders = bn_client.get_open_margin_orders()
-        for o in orders:
-            if float(o["origQty"]) == 0:
-                continue
-            pos.append(
-                {
-                    "symbol": o["symbol"],
-                    "side": "long" if o["side"] == "BUY" else "short",
-                    "quantity": float(o["origQty"]),
-                    "price": float(o["price"]) if o["price"] else 0.0,
-                }
-            )
-        if not pos:
-            print("[ℹ️] No active margin orders found.")
-        return pos
-    except Exception as e:
-        print(f"[❌] Margin order retrieval error: {e}")
-        return pos
-
-def _price(symbol: str) -> float:
-    return float(bn_client.get_symbol_ticker(symbol=symbol)["price"])
-
 
 def _cost_basis(symbol: str, qty: float, is_long: bool) -> float:
     if qty == 0:
@@ -152,40 +96,120 @@ def _cost_basis(symbol: str, qty: float, is_long: bool) -> float:
         if q >= qty:
             break
     return c / q if q else 0.0
+# === PORTFOLIO ===
+
+
+def get_binance_margin_positions():
+    """Return live margin positions (filled and still open)."""
+    pos = []
+    try:
+        acc = bn_client.get_margin_account()
+
+        for a in acc["userAssets"]:
+            asset = a["asset"]
+            if asset == "USDC":
+                continue
+
+            free = float(a["free"])
+            borrowed = float(a["borrowed"])
+            if free == borrowed == 0:
+                continue
+
+            symbol = f"{asset}USDC"
+
+            long_qty  = max(0.0, free - borrowed)
+            short_qty = max(0.0, borrowed - free)
+
+            if long_qty:
+                cb = _cost_basis(symbol, long_qty, True)
+                pos.append(
+                    {
+                        "symbol": symbol,
+                        "side": "long",
+                        "quantity": long_qty,
+                        "price": cb,
+                    }
+                )
+
+            if short_qty:
+                cb = _cost_basis(symbol, short_qty, False)
+                pos.append(
+                    {
+                        "symbol": symbol,
+                        "side": "short",
+                        "quantity": short_qty,
+                        "price": cb,
+                    }
+                )
+
+        if not pos:
+            print("[ℹ️] No active margin positions found.")
+        return pos
+
+    except Exception as e:
+        print(f"[❌] Margin position retrieval error: {e}")
+        return pos
 
 
 def build_portfolio_from_binance_assets(settings):
-    port = {"cash": 0.0, "positions": {}, "realized_gains": {}, "margin_requirement": settings.margin_requirement}
+    """
+    Retourne :
+      {
+        "available_USDC": float,          # cash libre
+        "total_margin_used": float,       # valeur des shorts ouverts
+        "available_margin_USDC": float, # valeur USDC encore shortable
+        "available_sell": {sym: qty},     # units shortables par ticker
+        "positions": {...}
+      }
+    """
+    margin_req = getattr(settings, "margin_requirement", 0.5)  # 50 % par défaut
     tickers = set(settings.signals.tickers)
 
-    acc = bn_client.get_margin_account()
-    usdc = next((a for a in acc["userAssets"] if a["asset"] == "USDC"), {"free": "0"})
-    port["cash"] = float(usdc["free"])
+    port = {
+        "available_USDC": 0.0,
+        "available_margin_USDC": 0.0,
+        "total_margin_used": 0.0,
+        "available_sell": {},
+        "positions": {},
+    }
 
-    for a in acc["userAssets"]:
-        base = a["asset"]
-        if base == "USDC":
-            continue
-        sym = f"{base}USDC"
-        if sym not in tickers:
+    # --- Cash USDC ------------------------------------------------------
+    try:
+        acc = bn_client.get_margin_account()
+        usdc = next((a for a in acc["userAssets"] if a["asset"] == "USDC"), {"free": "0"})
+        port["available_USDC"] = float(usdc["free"])
+    except Exception as e:
+        print(f"[❌] USDC fetch error: {e}")
+
+    # --- Positions & marge déjà utilisée --------------------------------
+    for p in get_binance_margin_positions():
+        if p["symbol"] not in tickers:
             continue
 
-        free = float(a["free"])
-        borrowed = float(a["borrowed"])
-        if free == borrowed == 0:
-            continue
-
-        long_qty = max(0.0, free - borrowed)
-        short_qty = max(0.0, borrowed - free)
-        long_cb = _cost_basis(sym, long_qty, True)
-        short_cb = _cost_basis(sym, short_qty, False)
-        margin_used = short_qty * (short_cb if short_cb else _price(sym))
+        sym, qty, side, entry = p["symbol"], p["quantity"], p["side"], p["price"]
+        price_now = _price(sym)
+        pnl = (price_now - entry) * qty if side == "long" else (entry - price_now) * qty
+        notional = qty * price_now
 
         port["positions"][sym] = {
-            "long": long_qty,
-            "short": short_qty,
-            "long_cost_basis": long_cb,
-            "short_cost_basis": short_cb,
-            "short_margin_used": margin_used,
+            "side": side,
+            "quantity": qty,
+            "entry": entry,
+            "current": price_now,
+            "unrealized_pnl": pnl,
         }
+        if side == "short":
+            port["total_margin_used"] += notional
+
+    # --- Marge encore disponible (valeur) -------------------------------
+    avail_margin = max(
+        0.0, (port["available_margin_USDC"] / margin_req) - port["total_margin_used"]
+    )
+    port["available_buy"] = avail_margin
+
+    # --- Quantité vendable (units) par ticker ---------------------------
+    for sym in tickers:
+        price_now = _price(sym)
+        port["available_sell"][sym] = 0.0 if price_now == 0 else avail_margin / price_now
+
     return port

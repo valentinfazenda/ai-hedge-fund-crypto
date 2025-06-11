@@ -32,7 +32,7 @@ class RiskManagementNode(BaseNode):
             current_position_value = portfolio.get("cost_basis", {}).get(ticker, 0.0)
 
             # Calculate total portfolio value using stored prices
-            total_portfolio_value = portfolio.get("cash", 0.0) + sum(
+            total_portfolio_value = portfolio.get("available_USDC", 0.0) + sum(
                 portfolio.get("cost_basis", {}).get(t, 0.0) for t in portfolio.get("cost_basis", {}))
 
             # Base limit is 40% of portfolio for any single position
@@ -42,7 +42,7 @@ class RiskManagementNode(BaseNode):
             remaining_position_limit = position_limit - current_position_value
 
             # Ensure we don't exceed available cash
-            max_position_size = min(remaining_position_limit, (portfolio.get("cash", 0.0)* (1/margin_requirement if margin_requirement > 0 else 1)))
+            max_position_size = min(remaining_position_limit, (portfolio.get("available_USDC", 0.0)* (1/margin_requirement if margin_requirement > 0 else 1)))
 
             risk_analysis[ticker] = {
                 "remaining_position_limit": float(max_position_size),
@@ -52,7 +52,7 @@ class RiskManagementNode(BaseNode):
                     "current_position": float(current_position_value),
                     "position_limit": float(position_limit),
                     "remaining_limit": float(remaining_position_limit),
-                    "available_cash": float(portfolio.get("cash", 0.0)),
+                    "available_cash": float(portfolio.get("available_USDC", 0.0)),
                 },
             }
 

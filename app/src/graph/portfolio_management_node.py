@@ -89,128 +89,126 @@ def generate_trading_decision(
     # Create the prompt template
     
     system_prompt = """
-    You are a professional cryptocurrency portfolio manager operating in a 24 / 7, highly-volatile market.
-    Your mandate:
-    • Preserve capital and grow risk-adjusted return (Sharpe, Sortino) over the long run.  
-    • Size every trade so that the portfolio’s 1-day 99 % Expected Shortfall never exceeds a configurable limit.  
-    • Respect exchange margin, position and notional caps at all times.  
-    • Prefer liquidity, low slippage routes and stable-coin settlement when cash-like exposure is required.  
-    • React swiftly to regime shifts triggered by on-chain activity, funding-rate spikes, large liquidations or macro headlines.  
-    Think first, then answer only with a valid JSON object.
-    
-    Inputs:
-    - signals_by_ticker: dictionary of ticker → signals
-    - max_shares: maximum shares allowed per ticker
-    - portfolio_cash: current cash in portfolio
-    - portfolio_positions: current positions (both long and short)
-    - current_prices: current prices for each ticker
-    - margin_requirement: current margin requirement for short positions (e.g., 0.5 means 50%)
-    - total_margin_used: total margin currently in use
-    
-    Available Actions:
-    - "buy": Open or add to long position
-    - "short": Open or add to short position
-    - "sell": Close or reduce long position
-    - "cover": Close or reduce short position
-    - "hold": No action
-    
-    Rules:
-    - For long positions:
-        * Only buy if you have available cash
-        * Only sell if you currently hold long shares of that ticker
-        * Sell quantity must be ≤ current long position shares
-        * Buy quantity must be ≤ max_shares for that ticker
+    You are a professional cryptocurrency portfolio manager operating in a 24/7, highly-volatile market.
+    Mandate
+    • Preserve capital and maximise risk-adjusted return (Sharpe, Sortino).  
+    • Keep 1-day 99 % Expected Shortfall under the configured limit.  
+    • Always respect exchange margin, position and notional caps.  
+    • Prefer liquid venues, low slippage routes and stable-coin settlement for cash-like exposure.  
+    • React swiftly to regime shifts (on-chain activity, funding spikes, liquidations, macro headlines).  
+    Think first, then answer ONLY with a valid JSON object.
 
-    - For short positions:
-        * Only short if you have available margin (position value × margin requirement)
-        * Only cover if you currently have short shares of that ticker
-        * Cover quantity must be ≤ current short position shares
-        * Short quantity must respect margin requirements
-    
-    Build a **conviction score** per ticker combining:
-        – multi-time-frame consensus  
-        – signal confidence (higher resolution ⇒ higher weight)  
-        – momentum direction & strength  
-        – realised/implied volatility, funding 
+    Inputs
+    • signals_by_ticker – dict ticker → signals  
+    • current_prices – dict ticker → price  
+    • max_shares – dict ticker → float  
+    • portfolio_cash – USDC available  
+    • portfolio_positions – current open positions (long & short)  
+    • margin_requirement – fraction for shorts  
+    • total_margin_used – notional currently borrowed
+
+    Available operations
+    • open_long   – open / add to a long position  
+    • open_short  – open / add to a short position  
+    • close_long  – close / reduce an existing long position  
+    • close_short – close / reduce an existing short position  
+    • hold        – no action
+
+    Rules
+    LONG
+    open_long: require cash and/or available margin  
+    close_long: only if a long exists; quantity ≤ current long size
+    SHORT
+    open_short: require available margin ((qty×price)×margin_requirement)  
+    close_short: only if a short exists; quantity ≤ current short size
+
+    Conviction score per ticker combines
+    • multi-time-frame consensus  
+    • signal confidence (higher resolution ⇒ higher weight)  
+    • momentum direction & strength  
+    • realised / implied vol, funding
+
+    Output JSON ONLY. No extra text.
     
     """
 
     user_prompt = f"""
-    # Inputs
-    Here are the signals by ticker:
+    signals_by_ticker:
     {json.dumps(signals_by_ticker, indent=2)}
 
-    Current Prices:
+    current_prices:
     {json.dumps(current_prices, indent=2)}
 
-    Maximum Shares Allowed For Purchases:
-    {json.dumps(max_shares, indent=2)}
-
-    Portfolio Cash: {portfolio.get('cash', 0.0):.2f}
-    Current Positions: {json.dumps(portfolio.get('positions', {}), indent=2)}
-    Current Margin Requirement: {portfolio.get('margin_requirement', 0.0):.2f}
-    Total Margin Used: {portfolio.get('margin_used', 0.0):.2f}
+    portfolio_cash: {portfolio.get('available_USDC', 0.0):.2f}
     
-    Consider both buy and short opportunities based on signals
-
-    **Buy** only if conviction ≥ 50.
+    available_margin_USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}
+    portfolio_available_sell: {json.dumps(portfolio.get('available_sell', {}), indent=2)}
     
-    **Short** only if conviction ≥ 50.
+    portfolio_positions:
+    {json.dumps(portfolio.get('positions', {}), indent=2)}
 
-    **Sell** if long position exists AND if conviction ≥ 50 AND
-        • price ≥ cost_basis × 1.03 (profit >3%) AND 
-        • price −4% in 30m OR 1h/2h with bearish signal
+        
+    • If no position exists and market shows a bearish or bullish shorterm signal, open_long or open_short with quantity*current_prices < [available_margin_USDC]
     
-    **Cover** if short exists AND if conviction ≥ 50 AND 
-        • price ≤ cost_basis × 0.97 (profit >3%), _or_  
-        • price +2% in 30m OR +4% in 1h/2h with bullish signal
 
-    # Output format:
-    Return only valid JSON with this strict structure:
-
-    {{ "decisions": {{ 
+    # Output format (strict)
+    {{
+    "decisions": {{
         "TICKER": {{
-        "action":"buy"|"short"|"sell"|"cover"|"hold",
+        "operation": "open_long" | "open_short" | "close_long" | "close_short" | "hold",
         "quantity": float,
-        "confidence": float between 0 and 100,
-        "reasoning": "string"
+        "confidence": 0-100,
+        "reasoning": "string explaining the choice",
+        "side": "long" | "short"        # mandatory when operation != hold
         }},
         ...
-    }} }}
+    }}
+    }}
     """
     
-    print(f"Prompting {user_prompt}")
+    # print(f"Prompting {user_prompt}")
+    print (f"current_prices: {current_prices}")
+    print (f"available_margin_USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}")
+    print (f"portfolio equity: {portfolio.get('equity', 0.0):.2f}")    
     
     max_retries = 10
+    valid_ops = {"open_long", "close_long", "open_short", "close_short", "hold"}
+
     for attempt in range(1, max_retries + 1):
-        response = client.chat.completions.create(
+        resp = client.chat.completions.create(
             model=model_name,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
         )
-
-        content = response.choices[0].message.content.replace("```json", "").replace("```", "").strip()
-
+        content = resp.choices[0].message.content.replace("```json", "").replace("```", "").strip()
         if not content:
-            print(f"⚠️ Attempt {attempt}: Empty response from LLM")
+            print(f"⚠️ Attempt {attempt}: Empty response")
             continue
-
         try:
-            result = json.loads(content)
+            data = json.loads(content)
         except json.JSONDecodeError:
-            print(f"⚠️ Attempt {attempt}: Invalid JSON response:\n{content}")
+            print(f"⚠️ Attempt {attempt}: Invalid JSON\n{content}")
             continue
 
-        # Validate structure
-        decisions = result.get("decisions")
-        if isinstance(decisions, dict) and all(
-            isinstance(v, dict) and "action" in v and "quantity" in v
-            for v in decisions.values()
-        ):
-            return result
+        decisions = data.get("decisions")
+        print (f"Attempt {attempt}: decisions = {decisions}")
+        if not isinstance(decisions, dict):
+            print(f"⚠️ Attempt {attempt}: 'decisions' missing or not a dict")
+            continue
 
-        print(f"⚠️ Attempt {attempt}: Malformed decisions object:\n{decisions}")
+        def _valid(d):
+            return (
+                isinstance(d, dict)
+                and d.get("operation") in valid_ops
+                and isinstance(d.get("quantity"), (int, float))
+                and isinstance(d.get("confidence"), (int, float))
+            )
 
-    raise ValueError("❌ Failed to get a valid response from LLM after multiple retries.")
+        if all(_valid(v) for v in decisions.values()):
+            return data
+
+        print(f"⚠️ Attempt {attempt}: Malformed decisions\n{decisions}")
+
+    raise ValueError("❌ No valid response from LLM after multiple retries.")
