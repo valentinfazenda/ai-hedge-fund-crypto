@@ -112,7 +112,7 @@ class MacdStrategy(BaseNode):
         state["data"]["analyst_signals"]["technical_analyst_agent"] = technical_analysis
 
         # return state
-        # # print(state)
+        # print(state)
 
         return {
             "messages": [message],

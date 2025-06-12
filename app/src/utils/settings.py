@@ -42,9 +42,3 @@ def load_settings(yaml_path: str = "app/config.yaml") -> Settings:
 
 # Load and use
 settings = load_settings()
-
-# print(settings.mode)
-# print(settings.primary_interval)
-# print(settings.start_date)
-# print(settings.end_date)
-# print(settings.signals)

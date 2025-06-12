@@ -70,7 +70,6 @@ class Agent:
                 },
             },
         )
-        # print("the final state:", final_state["data"]["analyst_signals"])
         return {
             "decisions": parse_str_to_json(final_state["messages"][-1].content),
             "analyst_signals": final_state["data"]["analyst_signals"],

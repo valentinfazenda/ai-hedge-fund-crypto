@@ -47,7 +47,6 @@ def lambda_handler(event, context):
             show_reasoning=settings.show_reasoning,
             show_agent_graph=settings.show_agent_graph
         )
-        print(portfolio)
         
         
         print(result.get('decisions'))
