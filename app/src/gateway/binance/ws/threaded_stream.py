@@ -3,9 +3,10 @@ import threading
 from typing import Optional, Dict, Any
 
 from ..async_client import AsyncClient
+from src.utils.logger import setup_logger
 from ..helpers import get_loop
 
-
+logger = setup_logger()
 class ThreadedApiManager(threading.Thread):
     def __init__(
         self,
@@ -85,6 +86,6 @@ class ThreadedApiManager(threading.Thread):
                 future.result(timeout=5)  # Add timeout to prevent hanging
             except Exception as e:
                 # Log the error but don't raise it
-                print(f"Error stopping client: {e}")
+                logger.debug(f"Error stopping client: {e}")
         for socket_name in self._socket_running.keys():
             self._socket_running[socket_name] = False

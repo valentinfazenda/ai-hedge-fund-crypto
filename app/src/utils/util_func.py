@@ -7,6 +7,9 @@ from colorama import Fore, Style
 from tabulate import tabulate
 import orjson
 from utils import QUANTITY_DECIMALS
+from src.utils.logger import setup_logger
+
+logger = setup_logger()
 
 
 def import_strategy_class(strategies_path: str):
@@ -46,13 +49,13 @@ def parse_str_to_json(response):
     try:
         return orjson.loads(response)
     except orjson.JSONDecodeError as e:
-        print(f"JSON decoding error: {e}\nResponse: {repr(response)}")
+        logger.error(f"JSON decoding error: {e}\nResponse: {repr(response)}")
         return None
     except TypeError as e:
-        print(f"Invalid response type (expected string, got {type(response).__name__}): {e}")
+        logger.error(f"Invalid response type (expected string, got {type(response).__name__}): {e}")
         return None
     except Exception as e:
-        print(f"Unexpected error while parsing response: {e}\nResponse: {repr(response)}")
+        logger.error(f"Unexpected error while parsing response: {e}\nResponse: {repr(response)}")
         return None
 
 def format_backtest_row(
@@ -135,31 +138,31 @@ def print_backtest_results(table_rows: list) -> None:
     # Display latest portfolio summary
     if summary_rows:
         latest_summary = summary_rows[-1]
-        print(f"\n{Fore.WHITE}{Style.BRIGHT}PORTFOLIO SUMMARY:{Style.RESET_ALL}")
+        logger.debug(f"\n{Fore.WHITE}{Style.BRIGHT}PORTFOLIO SUMMARY:{Style.RESET_ALL}")
 
         # Extract values and remove commas before converting to float
         cash_str = latest_summary[7].split("$")[1].split(Style.RESET_ALL)[0].replace(",", "")
         position_str = latest_summary[6].split("$")[1].split(Style.RESET_ALL)[0].replace(",", "")
         total_str = latest_summary[8].split("$")[1].split(Style.RESET_ALL)[0].replace(",", "")
 
-        print(f"Cash Balance: {Fore.CYAN}${float(cash_str):,.2f}{Style.RESET_ALL}")
-        print(f"Total Position Value: {Fore.YELLOW}${float(position_str):,.2f}{Style.RESET_ALL}")
-        print(f"Total Value: {Fore.WHITE}${float(total_str):,.2f}{Style.RESET_ALL}")
-        print(f"Return: {latest_summary[9]}")
+        logger.debug(f"Cash Balance: {Fore.CYAN}${float(cash_str):,.2f}{Style.RESET_ALL}")
+        logger.debug(f"Total Position Value: {Fore.YELLOW}${float(position_str):,.2f}{Style.RESET_ALL}")
+        logger.debug(f"Total Value: {Fore.WHITE}${float(total_str):,.2f}{Style.RESET_ALL}")
+        logger.debug(f"Return: {latest_summary[9]}")
 
         # Display performance metrics if available
         if latest_summary[10]:  # Sharpe ratio
-            print(f"Sharpe Ratio: {latest_summary[10]}")
+            logger.debug(f"Sharpe Ratio: {latest_summary[10]}")
         if latest_summary[11]:  # Sortino ratio
-            print(f"Sortino Ratio: {latest_summary[11]}")
+            logger.debug(f"Sortino Ratio: {latest_summary[11]}")
         if latest_summary[12]:  # Max drawdown
-            print(f"Max Drawdown: {latest_summary[12]}")
+            logger.debug(f"Max Drawdown: {latest_summary[12]}")
 
     # Add vertical spacing
-    print("\n" * 2)
+    logger.debug("\n" * 2)
 
     # Print the table with just ticker rows
-    print(
+    logger.debug(
         tabulate(
             ticker_rows,
             headers=[
@@ -191,4 +194,4 @@ def print_backtest_results(table_rows: list) -> None:
     )
 
     # Add vertical spacing
-    print("\n" * 4)
+    logger.debug("\n" * 4)

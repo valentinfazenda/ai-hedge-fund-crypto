@@ -6,12 +6,14 @@ This module handles the first step in the workflow: fetching data from the data 
 
 from datetime import datetime, timedelta
 from typing import Dict, Any
+from src.utils.logger import setup_logger
 
 from src.utils import BinanceDataProvider, Interval
 from .base_node import BaseNode, AgentState
 
 # Initialize data provider
 data_provider = BinanceDataProvider()
+logger = setup_logger()
 
 
 class DataNode(BaseNode):
@@ -39,6 +41,6 @@ class DataNode(BaseNode):
             if df is not None and not df.empty:
                 data[f"{ticker}_{timeframe}"] = df
             else:
-                print(f"[Warning] No data returned for {ticker} at interval {timeframe}")
+                logger.warning(f"No data returned for {ticker} at interval {timeframe}")
 
         return state

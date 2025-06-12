@@ -2,12 +2,14 @@ import os
 from typing import Dict, Any, List
 import json
 from langchain_core.messages import HumanMessage
+from src.utils.logger import setup_logger
 from .base_node import BaseNode, AgentState
 from graph import show_agent_reasoning
 from src.llm import get_azure_openai_client
 
 
 client = get_azure_openai_client() 
+logger = setup_logger()
 
 
 class PortfolioManagementNode(BaseNode):
@@ -64,7 +66,6 @@ class PortfolioManagementNode(BaseNode):
             name="portfolio_management",
         )
 
-        # Print the decision if the flag is set
         if state["metadata"]["show_reasoning"]:
             show_agent_reasoning(result.get("decisions"),
                                  "Portfolio Management Agent")
@@ -165,12 +166,13 @@ def generate_trading_decision(
     }}
     """
     
-    # print(f"Prompting {user_prompt}")
-    # print (f"[ℹ️] Available USDC : {portfolio.get('available_USDC', 0.0):.2f} tickers...")
-    # print (f"[ℹ️] Available margin USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}")
-    # print (f"[ℹ️] Current_prices: {current_prices}")
-    # print (f"portfolio positions: {json.dumps(portfolio.get('positions', {}), indent=2)}")
-    # print (f"portfolio equity: {portfolio.get('equity', 0.0):.2f}")    
+    logger.debug(f"Prompting {user_prompt}")
+    logger.debug(f"[ℹ️] Available USDC: {portfolio.get('available_USDC', 0.0):.2f} tickers...")
+    logger.debug(f"[ℹ️] Available margin USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}")
+    logger.debug(f"[ℹ️] Current prices: {current_prices}")
+    logger.debug(f"Portfolio positions: {json.dumps(portfolio.get('positions', {}), indent=2)}")
+    logger.debug(f"Portfolio equity: {portfolio.get('equity', 0.0):.2f}")
+   
     
     max_retries = 10
     valid_ops = {"open_long", "close_long", "open_short", "close_short", "hold"}
@@ -185,18 +187,18 @@ def generate_trading_decision(
         )
         content = resp.choices[0].message.content.replace("```json", "").replace("```", "").strip()
         if not content:
-            print(f"⚠️ Attempt {attempt}: Empty response")
+            logger.warning(f"⚠️ Attempt {attempt}: Empty response")
             continue
         try:
             data = json.loads(content)
         except json.JSONDecodeError:
-            print(f"⚠️ Attempt {attempt}: Invalid JSON\n{content}")
+            logger.warning(f"⚠️ Attempt {attempt}: Invalid JSON\n{content}")
             continue
 
         decisions = data.get("decisions")
-        print (f"Attempt {attempt}: decisions = {decisions}")
+        logger.debug (f"Attempt {attempt}: decisions = {decisions}")
         if not isinstance(decisions, dict):
-            print(f"⚠️ Attempt {attempt}: 'decisions' missing or not a dict")
+            logger.warning(f"⚠️ Attempt {attempt}: 'decisions' missing or not a dict")
             continue
 
         def _valid(d):
@@ -210,6 +212,6 @@ def generate_trading_decision(
         if all(_valid(v) for v in decisions.values()):
             return data
 
-        print(f"⚠️ Attempt {attempt}: Malformed decisions\n{decisions}")
+        logger.error(f"⚠️ Attempt {attempt}: Malformed decisions\n{decisions}")
 
     raise ValueError("❌ No valid response from LLM after multiple retries.")

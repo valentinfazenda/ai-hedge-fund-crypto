@@ -2,7 +2,10 @@ import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 from src.backtest.backtester import Backtester
+from src.utils.logger import setup_logger
 import json
+
+logger = setup_logger()
 
 if __name__ == "__main__":
 
@@ -18,28 +21,20 @@ if __name__ == "__main__":
         show_agent_graph="false",
         show_reasoning="false",
     )
-    print("Starting backtest...")
-    print(f"Initial Capital: {backtester.initial_capital}")
     
-    # backtester.execute_trade("ETHUSDC", "buy", 2, 1)
-    
-    # print ("Analytics bought 2 for 1:")
-    # print(f"Portfolio: {backtester.portfolio}")
-    
-    # backtester.execute_trade("ETHUSDC", "sell", 1, 2)
-    
-    # print ("Analytics sell 1 for 2:")
-    # print(f"Final Portfolio: {backtester.portfolio}")
+    logger.info("Starting backtest...")
+    logger.info(f"Initial Capital: {backtester.initial_capital}")
+
     backtester.execute_trade("ETHUSDC", "short", 2, 1)
-    
-    print ("Analytics bought 2 for 1:")
-    print(f"Portfolio: {backtester.portfolio}")
-    
+
+    logger.info("Executed short trade (2 for 1)")
+    logger.info(f"Portfolio after short: {json.dumps(backtester.portfolio, indent=2)}")
+
     backtester.execute_trade("ETHUSDC", "cover", 1, 0.5)
-    
-    print ("Analytics sell 1 for 2:")
-    print(f"Final Portfolio: {backtester.portfolio}")
-    
-    current_price = {}
-    current_price["ETHUSDC"] = 1
-    print(f"Portolio Value: {backtester.calculate_portfolio_value(current_price)}")
+
+    logger.info("Executed cover trade (1 for 0.5)")
+    logger.info(f"Final Portfolio: {json.dumps(backtester.portfolio, indent=2)}")
+
+    current_price = {"ETHUSDC": 1}
+    portfolio_value = backtester.calculate_portfolio_value(current_price)
+    logger.info(f"Portfolio Value at current price: {portfolio_value}")

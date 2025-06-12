@@ -8,7 +8,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 from src.utils import settings
 from src.agent import Agent
 from src.backtest.backtester import Backtester
+from src.utils.logger import setup_logger
 from src.utils.binance_order_executor import place_binance_order, build_portfolio_from_binance_assets
+
+logger = setup_logger()
 
 def lambda_handler(event, context):
     if settings.mode == "backtest":
@@ -23,7 +26,7 @@ def lambda_handler(event, context):
             show_agent_graph=settings.show_agent_graph,
             show_reasoning=settings.show_reasoning,
         )
-        print("Starting backtest...")
+        logger.debug("Starting backtest...")
         performance_metrics = backtester.run_backtest()
         performance_df = backtester.analyze_performance()
         
@@ -49,7 +52,7 @@ def lambda_handler(event, context):
         )
         
         
-        print(result.get('decisions'))
+        logger.debug(result.get('decisions'))
         decisions = result.get("decisions", {})
 
         for symbol, decision in decisions.items():

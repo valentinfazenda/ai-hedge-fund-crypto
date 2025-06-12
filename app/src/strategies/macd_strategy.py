@@ -111,9 +111,6 @@ class MacdStrategy(BaseNode):
         # Add the signal to the analyst_signals list
         state["data"]["analyst_signals"]["technical_analyst_agent"] = technical_analysis
 
-        # return state
-        # print(state)
-
         return {
             "messages": [message],
             "data": data,

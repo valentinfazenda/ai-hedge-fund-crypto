@@ -1,12 +1,15 @@
 import os
 import sys
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 from dotenv import load_dotenv
 from src.utils import settings
 from src.backtest.backtester import Backtester
+from src.utils.logger import setup_logger
 
 
 load_dotenv()
+logger = setup_logger()
 
 
 if __name__ == "__main__":
@@ -24,6 +27,6 @@ if __name__ == "__main__":
         show_reasoning=settings.show_reasoning,
     )
 
-    print("Starting backtest...")
+    logger.debug("Starting backtest...")
     performance_metrics = backtester.run_backtest()
     performance_df = backtester.analyze_performance()

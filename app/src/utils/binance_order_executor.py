@@ -2,8 +2,10 @@ import os, math, time
 from decimal import Decimal, ROUND_DOWN
 from binance.client import Client
 from dotenv import load_dotenv
+from src.utils.logger import setup_logger
 
 load_dotenv()
+logger = setup_logger()
 
 # === CLIENT ===
 bn_client = Client(
@@ -51,10 +53,10 @@ def place_binance_order(
     qty = adjust_quantity_margin(symbol, quantity)
 
     if operation == "hold":
-        print(f"[SKIP] {symbol} HOLD – no action.")
+        logger.debug(f"[SKIP] {symbol} HOLD – no action.")
         return
     if qty <= 0:
-        print(f"[SKIP] {symbol} {operation.upper()} – qty too low.")
+        logger.debug(f"[SKIP] {symbol} {operation.upper()} – qty too low.")
         return
 
     op_map = {
@@ -64,7 +66,7 @@ def place_binance_order(
         "close_short":("BUY",  "AUTO_REPAY"),
     }
     if operation not in op_map:
-        print(f"[❓] Unknown operation '{operation}' for {symbol}.")
+        logger.error(f"[❓] Unknown operation '{operation}' for {symbol}.")
         return
 
     side, effect = op_map[operation]
@@ -77,9 +79,9 @@ def place_binance_order(
             sideEffectType=effect,
             isIsolated="TRUE" if isolated else "FALSE",
         )
-        print(f"[✅] {operation.upper()} {symbol} | Qty {qty} | ID {res.get('orderId','N/A')}")
+        logger.debug(f"[✅] {operation.upper()} {symbol} | Qty {qty} | ID {res.get('orderId','N/A')}")
     except Exception as e:
-        print(f"[❌] Margin execution error: {e}")
+        logger.error(f"[❌] Margin execution error: {e}")
 
 def _cost_basis(symbol: str, qty: float, is_long: bool) -> float:
     if qty == 0:
@@ -143,11 +145,11 @@ def get_binance_margin_positions():
                 )
 
         if not pos:
-            print("[ℹ️] No active margin positions found.")
+            logger.debug("[ℹ️] No active margin positions found.")
         return pos
 
     except Exception as e:
-        print(f"[❌] Margin position retrieval error: {e}")
+        logger.error(f"[❌] Margin position retrieval error: {e}")
         return pos
 
 
@@ -179,13 +181,13 @@ def build_portfolio_from_binance_assets(settings):
         usdc = next((a for a in acc["userAssets"] if a["asset"] == "USDC"), {"free": "0"})
         port["available_USDC"] = float(usdc["free"])
     except Exception as e:
-        print(f"[❌] USDC fetch error: {e}")
+        logger.error(f"[❌] USDC fetch error: {e}")
 
     # --- Positions & margin used --------------------------------
     for p in get_binance_margin_positions():
         if p["symbol"] not in tickers:
             continue
-        print(f"[ℹ️] Processing position: {p}")
+        logger.debug(f"[ℹ️] Processing position: {p}")
 
         sym, qty, side, entry = p["symbol"], p["quantity"], p["side"], p["price"]
         price_now = _price(sym)
@@ -201,8 +203,8 @@ def build_portfolio_from_binance_assets(settings):
 
     # --- Available margin -------------------------------
     margin_summary = margin_summary_usdc(bn_client)
-    print(f"[ℹ️] Margin summary: {margin_summary}")
-    print(f"[ℹ️] Available USDC: {port['available_USDC']:.2f} USDC")
+    logger.debug(f"[ℹ️] Margin summary: {margin_summary}")
+    logger.debug(f"[ℹ️] Available USDC: {port['available_USDC']:.2f} USDC")
     
     avail_margin = max(
         0.0, (margin_summary["equity"] / margin_req)

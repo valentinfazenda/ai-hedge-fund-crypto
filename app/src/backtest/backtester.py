@@ -10,8 +10,10 @@ from colorama import Fore, Style
 from agent import Agent
 from utils import Interval, QUANTITY_DECIMALS, format_backtest_row, print_backtest_results
 from utils.binance_data_provider import BinanceDataProvider
+from src.utils.logger import setup_logger
 import time
 
+logger = setup_logger()
 
 class Backtester:
     """LLM‑driven long/short back‑tester using the new portfolio format.
@@ -117,7 +119,7 @@ class Backtester:
         
         margin_available = self.portfolio["available_USDC"] / self.margin_requirement
         
-        print(f"Executing {operation} for {symbol}: quantity={quantity}, price={current_price}")
+        logger.debug(f"Executing {operation} for {symbol}: quantity={quantity}, price={current_price}")
 
         # open long ------------------------------------------------------
         if operation == "open_long":
@@ -249,7 +251,7 @@ class Backtester:
         """Calculate the equity value of the portfolio based on current prices."""
         equity = self.portfolio["available_USDC"]
         borrowed_USDC = self.portfolio.get("borrowed_USDC", 0.0)
-        print(f"Calculating equity at price {price:.2f} with available_USDC: {self.portfolio['available_USDC']:.2f} and borrowed_USDC: {borrowed_USDC:.2f}")
+        logger.debug(f"Calculating equity at price {price:.2f} with available_USDC: {self.portfolio['available_USDC']:.2f} and borrowed_USDC: {borrowed_USDC:.2f}")
         if borrowed_USDC > 0:
             equity -= borrowed_USDC
         for sym, pos in self.portfolio["positions"].items():
@@ -257,9 +259,9 @@ class Backtester:
                 equity += pos["quantity"] * price
             else:
                 equity += pos["quantity"]*pos["entry"] - pos["quantity"] * price + self.portfolio.get("borrowed_USDC", 0.0)
-                print(f"Short position {sym} PnL: {(pos['entry'] - price) * pos['quantity']:.2f}")
-        print (f"Equity calculated: {equity:.2f} (available_USDC: {self.portfolio['available_USDC']:.2f}, borrowed_USDC: {borrowed_USDC:.2f})")
-        print (f"Positions: {self.portfolio['positions']}")
+                logger.debug(f"Short position {sym} PnL: {(pos['entry'] - price) * pos['quantity']:.2f}")
+        logger.debug (f"Equity calculated: {equity:.2f} (available_USDC: {self.portfolio['available_USDC']:.2f}, borrowed_USDC: {borrowed_USDC:.2f})")
+        logger.debug (f"Positions: {self.portfolio['positions']}")
 
         return equity
 
@@ -286,7 +288,7 @@ class Backtester:
     # ------------------------------------------------------------------
 
     def prefetch_data(self):
-        print("Fetching candles…")
+        logger.debug("Fetching candles…")
         for sym in self.tickers:
             self.klines[sym] = self.binance_data_provider.get_historical_klines(
                 symbol=sym,
@@ -294,7 +296,7 @@ class Backtester:
                 start_date=self.start_date,
                 end_date=self.end_date,
             )
-        print("Done.")
+        logger.debug("Done.")
 
     # ------------------------------------------------------------------
     # main backtest loop
@@ -458,15 +460,15 @@ class Backtester:
 
     def analyze_performance(self):
         if not self.portfolio_values:
-            print("Run backtest first")
+            logger.debug("Run backtest first")
             return pd.DataFrame()
         df = pd.DataFrame(self.portfolio_values).set_index("Date")
         if df.empty:
             return df
         final_val = df["Portfolio Value"].iloc[-1]
         tot_ret = (final_val - self.initial_capital) / self.initial_capital * 100
-        print(f"PORTFOLIO PERFORMANCE SUMMARY:")
-        print(f"Total Return: {Fore.GREEN if tot_ret >= 0 else Fore.RED}{tot_ret:.2f}%{Style.RESET_ALL}")
+        logger.debug(f"PORTFOLIO PERFORMANCE SUMMARY:")
+        logger.debug(f"Total Return: {Fore.GREEN if tot_ret >= 0 else Fore.RED}{tot_ret:.2f}%{Style.RESET_ALL}")
         plt.figure(figsize=(12, 6))
         plt.plot(df.index, df["Portfolio Value"], label="Equity")
         plt.title("Equity Curve")
@@ -479,24 +481,24 @@ class Backtester:
         rf = 0.0434 / 365
         mu, sigma = df["Daily Return"].mean(), df["Daily Return"].std()
         sharpe = np.sqrt(365) * (mu - rf) / sigma if sigma else 0
-        print(f"Sharpe Ratio: {Fore.YELLOW}{sharpe:.2f}{Style.RESET_ALL}")
+        logger.debug(f"Sharpe Ratio: {Fore.YELLOW}{sharpe:.2f}{Style.RESET_ALL}")
         mdd = self.performance_metrics.get("max_drawdown")
         mdd_date = self.performance_metrics.get("max_drawdown_date")
         if mdd_date:
-            print(f"Maximum Drawdown: {Fore.RED}{abs(mdd):.2f}%{Style.RESET_ALL} (on {mdd_date})")
+            logger.debug(f"Maximum Drawdown: {Fore.RED}{abs(mdd):.2f}%{Style.RESET_ALL} (on {mdd_date})")
         else:
-            print(f"Maximum Drawdown: {Fore.RED}{abs(mdd):.2f}%{Style.RESET_ALL}")
+            logger.debug(f"Maximum Drawdown: {Fore.RED}{abs(mdd):.2f}%{Style.RESET_ALL}")
         wins = len(df[df["Daily Return"] > 0])
         days = max(len(df) - 1, 1)
         win_rate = wins / days * 100
-        print(f"Win Rate: {Fore.GREEN}{win_rate:.2f}%{Style.RESET_ALL}")
+        logger.debug(f"Win Rate: {Fore.GREEN}{win_rate:.2f}%{Style.RESET_ALL}")
         pos = df[df["Daily Return"] > 0]["Daily Return"].mean() or 0
         neg = abs(df[df["Daily Return"] < 0]["Daily Return"].mean()) or 0
         wl_ratio = pos / neg if neg else float("inf") if pos > 0 else 0
-        print(f"Win/Loss Ratio: {Fore.GREEN}{wl_ratio:.2f}{Style.RESET_ALL}")
+        logger.debug(f"Win/Loss Ratio: {Fore.GREEN}{wl_ratio:.2f}{Style.RESET_ALL}")
         bin_ret = (df["Daily Return"] > 0).astype(int)
         max_win_seq = max((len(list(g)) for k, g in itertools.groupby(bin_ret) if k == 1), default=0)
         max_loss_seq = max((len(list(g)) for k, g in itertools.groupby(bin_ret) if k == 0), default=0)
-        print(f"Max Consecutive Wins: {Fore.GREEN}{max_win_seq}{Style.RESET_ALL}")
-        print(f"Max Consecutive Losses: {Fore.RED}{max_loss_seq}{Style.RESET_ALL}")
+        logger.debug(f"Max Consecutive Wins: {Fore.GREEN}{max_win_seq}{Style.RESET_ALL}")
+        logger.debug(f"Max Consecutive Losses: {Fore.RED}{max_loss_seq}{Style.RESET_ALL}")
         return df

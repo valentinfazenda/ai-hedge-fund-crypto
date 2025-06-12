@@ -11,8 +11,10 @@ from pathlib import Path
 
 from src.gateway.binance.client import Client
 from src.utils.constants import COLUMNS, NUMERIC_COLUMNS
+from src.utils.logger import setup_logger
 import os
 
+logger = setup_logger()
 
 class BinanceDataProvider:
     """
@@ -82,10 +84,10 @@ class BinanceDataProvider:
 
         # Check if cache file exists and is fresh
         if use_cache and cache_file.exists():
-            print(f"Loading cached data for {formatted_symbol} {timeframe}")
+            logger.debug(f"Loading cached data for {formatted_symbol} {timeframe}")
             return pd.read_csv(cache_file, parse_dates=['open_time', 'close_time'])
 
-        print(f"Fetching historical data for {formatted_symbol} {timeframe}")
+        logger.debug(f"Fetching historical data for {formatted_symbol} {timeframe}")
 
         # Convert datetime to milliseconds timestamp
         start_ts = int(start_date.timestamp() * 1000)
@@ -116,7 +118,7 @@ class BinanceDataProvider:
             return df
 
         except Exception as e:
-            print(f"Error fetching historical data for {formatted_symbol} {timeframe}: {e}")
+            logger.error(f"Error fetching historical data for {formatted_symbol} {timeframe}: {e}")
             return pd.DataFrame()
 
     def get_multiple_timeframes_with_end_time(
@@ -175,7 +177,7 @@ class BinanceDataProvider:
             #     result[timeframe] = df
             #
             # except Exception as e:
-            #     print(f"Error fetching latest data for {formatted_symbol} {timeframe}: {e}")
+            #     logger.error(f"Error fetching latest data for {formatted_symbol} {timeframe}: {e}")
             #     result[timeframe] = pd.DataFrame()
 
         return result
@@ -220,7 +222,7 @@ class BinanceDataProvider:
             return df
 
         except Exception as e:
-            print(f"Error fetching latest data for {formatted_symbol} {timeframe}: {e}")
+            logger.error(f"Error fetching latest data for {formatted_symbol} {timeframe}: {e}")
             return pd.DataFrame()
 
     def get_latest_multi_timeframe_data(
@@ -248,7 +250,7 @@ class BinanceDataProvider:
             if not df.empty:
                 result[timeframe] = df
             else:
-                print(f"Warning: No data retrieved for {symbol} {timeframe}")
+                logger.warning(f"Warning: No data retrieved for {symbol} {timeframe}")
         return result
 
     def get_multi_timeframe_data(
@@ -283,7 +285,7 @@ class BinanceDataProvider:
             if not df.empty:
                 result[timeframe] = df
             else:
-                print(f"Warning: No data retrieved for {symbol} {timeframe}")
+                logger.warning(f"Warning: No data retrieved for {symbol} {timeframe}")
 
         return result
 
@@ -324,7 +326,7 @@ class BinanceDataProvider:
             return df
 
         except Exception as e:
-            print(f"Error fetching latest data for {formatted_symbol} {timeframe}: {e}")
+            logger.error(f"Error fetching latest data for {formatted_symbol} {timeframe}: {e}")
             return pd.DataFrame()
 
 
@@ -336,23 +338,23 @@ def test_data_provider():
 
     # Get latest data
     df = provider.get_latest_data(symbol, timeframe, limit=10)
-    print(f"Latest data for {symbol} {timeframe}:")
-    print(df.head())
+    logger.debug(f"Latest data for {symbol} {timeframe}:")
+    logger.debug(df.head())
 
     # Get historical data
     start_date = datetime.now() - timedelta(days=7)
     df_hist = provider.get_historical_klines(symbol, timeframe, start_date)
-    print(f"\nHistorical data for {symbol} {timeframe}:")
-    print(f"Retrieved {len(df_hist)} records")
-    print(df_hist.head())
+    logger.debug(f"\nHistorical data for {symbol} {timeframe}:")
+    logger.debug(f"Retrieved {len(df_hist)} records")
+    logger.debug(df_hist.head())
 
     # Get multiple timeframes
     timeframes = ["5m", "15m", "1h"]
     multi_tf_data = provider.get_multi_timeframe_data(symbol, timeframes, start_date)
     for tf, tf_df in multi_tf_data.items():
-        print(f"\nData for {symbol} {tf}:")
-        print(f"Retrieved {len(tf_df)} records")
-        print(tf_df.head())
+        logger.debug(f"\nData for {symbol} {tf}:")
+        logger.debug(f"Retrieved {len(tf_df)} records")
+        logger.debug(tf_df.head())
 
 
 if __name__ == "__main__":
