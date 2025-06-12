@@ -195,7 +195,7 @@ def generate_trading_decision(
             continue
 
         decisions = data.get("decisions")
-        logger.debug (f"Attempt {attempt}: decisions = {decisions}")
+        logger.info (f"Attempt {attempt}: decisions = {decisions}")
         if not isinstance(decisions, dict):
             logger.warning(f"⚠️ Attempt {attempt}: 'decisions' missing or not a dict")
             continue

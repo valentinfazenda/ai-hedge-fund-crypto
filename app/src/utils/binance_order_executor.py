@@ -53,10 +53,10 @@ def place_binance_order(
     qty = adjust_quantity_margin(symbol, quantity)
 
     if operation == "hold":
-        logger.debug(f"[SKIP] {symbol} HOLD – no action.")
+        logger.info(f"[SKIP] {symbol} HOLD – no action.")
         return (f"[SKIP] {symbol} HOLD – no action.")
     if qty <= 0:
-        logger.debug(f"[SKIP] {symbol} {operation.upper()} – qty too low.")
+        logger.warning(f"[SKIP] {symbol} {operation.upper()} – qty too low.")
         return (f"[SKIP] {symbol} {operation.upper()} – qty too low.")
 
     op_map = {
@@ -210,7 +210,7 @@ def build_portfolio_from_binance_assets(settings):
     avail_margin = max(
         0.0, (margin_summary["equity"] / margin_req)
     )
-    port["available_margin_USDC"] = avail_margin
+    port["available_margin_USDC"] = avail_margin - margin_summary["equity"]
 
     # --- Available sell quantity / ticker ---------------------------
     for sym in tickers:
