@@ -105,8 +105,7 @@ def generate_trading_decision(
     • max_shares – dict ticker → float  
     • portfolio_cash – USDC available  
     • portfolio_positions – current open positions (long & short)  
-    • margin_requirement – fraction for shorts  
-    • total_margin_used – notional currently borrowed
+    • margin_requirement – fraction for shorts
 
     Available operations
     • open_long   – open / add to a long position  
