@@ -54,10 +54,10 @@ def place_binance_order(
 
     if operation == "hold":
         logger.debug(f"[SKIP] {symbol} HOLD – no action.")
-        return
+        return (f"[SKIP] {symbol} HOLD – no action.")
     if qty <= 0:
         logger.debug(f"[SKIP] {symbol} {operation.upper()} – qty too low.")
-        return
+        return (f"[SKIP] {symbol} {operation.upper()} – qty too low.")
 
     op_map = {
         "open_long":  ("BUY",  "MARGIN_BUY"),
@@ -67,7 +67,7 @@ def place_binance_order(
     }
     if operation not in op_map:
         logger.error(f"[❓] Unknown operation '{operation}' for {symbol}.")
-        return
+        return (f"[❓] Unknown operation '{operation}' for {symbol}.")
 
     side, effect = op_map[operation]
     try:
@@ -79,7 +79,8 @@ def place_binance_order(
             sideEffectType=effect,
             isIsolated="TRUE" if isolated else "FALSE",
         )
-        logger.debug(f"[✅] {operation.upper()} {symbol} | Qty {qty} | ID {res.get('orderId','N/A')}")
+        logger.info(f"[✅] {operation.upper()} {symbol} | Qty {qty} | ID {res.get('orderId','N/A')}")
+        return res
     except Exception as e:
         logger.error(f"[❌] Margin execution error: {e}")
 

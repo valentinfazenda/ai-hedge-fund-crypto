@@ -52,16 +52,17 @@ def lambda_handler(event, context):
         )
         
         
-        logger.debug(result.get('decisions'))
         decisions = result.get("decisions", {})
-
+        logger.info(decisions)
+        
         for symbol, decision in decisions.items():
-            place_binance_order(symbol,  decision["operation"], decision["quantity"])
+            order_result = place_binance_order(symbol,  decision["operation"], decision["quantity"])
 
         return {
             "statusCode": 200,
             "body": {
                 "portfolio": str(portfolio),
-                "decisions": decisions
+                "decisions": decisions,
+                "order_result": order_result
             }
         }
