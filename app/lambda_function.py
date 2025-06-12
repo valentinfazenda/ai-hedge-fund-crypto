@@ -54,7 +54,7 @@ def lambda_handler(event, context):
         decisions = result.get("decisions", {})
 
         for symbol, decision in decisions.items():
-            place_binance_order(symbol, decision["action"], decision["quantity"])
+            place_binance_order(symbol,  decision["operation"], decision["quantity"])
 
         return {
             "statusCode": 200,
