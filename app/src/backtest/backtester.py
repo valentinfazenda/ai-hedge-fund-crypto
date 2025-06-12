@@ -214,9 +214,7 @@ class Backtester:
             self.portfolio["borrowed_USDC"] += proceeds  # borrowed USDC for margin
             
             self.portfolio["equity"] = self.calculate_equity(current_price)
-            self.portfolio["available_margin_USDC"] = self.portfolio["equity"]/ self.margin_requirement
             self._update_pnl(symbol, current_price)
-            time.sleep(1000)
             return quantity
 
         # close short ----------------------------------------------------

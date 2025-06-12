@@ -181,15 +181,15 @@ def build_portfolio_from_binance_assets(settings):
     except Exception as e:
         print(f"[❌] USDC fetch error: {e}")
 
-    # --- Positions & marge déjà utilisée --------------------------------
+    # --- Positions & margin used --------------------------------
     for p in get_binance_margin_positions():
         if p["symbol"] not in tickers:
             continue
+        print(f"[ℹ️] Processing position: {p}")
 
         sym, qty, side, entry = p["symbol"], p["quantity"], p["side"], p["price"]
         price_now = _price(sym)
         pnl = (price_now - entry) * qty if side == "long" else (entry - price_now) * qty
-        notional = qty * price_now
 
         port["positions"][sym] = {
             "side": side,
@@ -198,18 +198,28 @@ def build_portfolio_from_binance_assets(settings):
             "current": price_now,
             "unrealized_pnl": pnl,
         }
-        if side == "short":
-            port["total_margin_used"] += notional
 
-    # --- Marge encore disponible (valeur) -------------------------------
+    # --- Available margin -------------------------------
+    margin_summary = margin_summary_usdc(bn_client)
+    print(f"[ℹ️] Margin summary: {margin_summary}")
+    print(f"[ℹ️] Available USDC: {port['available_USDC']:.2f} USDC")
+    
     avail_margin = max(
-        0.0, (port["available_margin_USDC"] / margin_req) - port["total_margin_used"]
+        0.0, (margin_summary["equity"] / margin_req)
     )
-    port["available_buy"] = avail_margin
+    port["available_margin_USDC"] = avail_margin
 
-    # --- Quantité vendable (units) par ticker ---------------------------
+    # --- Available sell quantity / ticker ---------------------------
     for sym in tickers:
         price_now = _price(sym)
         port["available_sell"][sym] = 0.0 if price_now == 0 else avail_margin / price_now
 
     return port
+
+def margin_summary_usdc(client: Client) -> dict[str, float]:
+    acc = client.get_margin_account()
+    btc_price = Decimal(client.get_symbol_ticker(symbol="BTCUSDC")["price"])
+    assets  = Decimal(acc["totalAssetOfBtc"])     * btc_price
+    debt    = Decimal(acc["totalLiabilityOfBtc"]) * btc_price
+    equity  = Decimal(acc["totalNetAssetOfBtc"])  * btc_price
+    return {"assets": float(assets), "debt": float(debt), "equity": float(equity)}

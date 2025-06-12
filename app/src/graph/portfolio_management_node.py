@@ -142,7 +142,6 @@ def generate_trading_decision(
     portfolio_cash: {portfolio.get('available_USDC', 0.0):.2f}
     
     available_margin_USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}
-    portfolio_available_sell: {json.dumps(portfolio.get('available_sell', {}), indent=2)}
     
     portfolio_positions:
     {json.dumps(portfolio.get('positions', {}), indent=2)}
@@ -167,9 +166,11 @@ def generate_trading_decision(
     """
     
     # print(f"Prompting {user_prompt}")
-    print (f"current_prices: {current_prices}")
-    print (f"available_margin_USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}")
-    print (f"portfolio equity: {portfolio.get('equity', 0.0):.2f}")    
+    print (f"[ℹ️] Available USDC : {portfolio.get('available_USDC', 0.0):.2f} tickers...")
+    print (f"[ℹ️] Available margin USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}")
+    print (f"[ℹ️] Current_prices: {current_prices}")
+    print (f"portfolio positions: {json.dumps(portfolio.get('positions', {}), indent=2)}")
+    # print (f"portfolio equity: {portfolio.get('equity', 0.0):.2f}")    
     
     max_retries = 10
     valid_ops = {"open_long", "close_long", "open_short", "close_short", "hold"}
