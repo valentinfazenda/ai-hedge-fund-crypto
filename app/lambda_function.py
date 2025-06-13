@@ -1,5 +1,6 @@
 import os
 import sys
+import boto3
 from datetime import datetime
 
 # Include src in the path
@@ -12,6 +13,8 @@ from src.utils.logger import setup_logger
 from src.utils.binance_order_executor import place_binance_order, build_portfolio_from_binance_assets
 
 logger = setup_logger()
+sns = boto3.client('sns')
+TOPIC_ARN = "arn:aws:sns:eu-north-1:654654340294:alert-bot-trade"
 
 def lambda_handler(event, context):
     if settings.mode == "backtest":
@@ -57,6 +60,15 @@ def lambda_handler(event, context):
         
         for symbol, decision in decisions.items():
             order_result = place_binance_order(symbol,  decision["operation"], decision["quantity"])
+        
+        if decisions["ETHUSDC"]["operation"] != "hold":     
+            message = (
+                        f"Action lancé: \n"
+                        f"{decision['operation']} avec une quantité de {decision['quantity']}\n"
+                        f"Result :\n"
+                        f"{order_result}"
+                    )
+            sns.publish(TopicArn=TOPIC_ARN, Message=message)
 
         return {
             "statusCode": 200,
@@ -66,3 +78,11 @@ def lambda_handler(event, context):
                 "order_result": order_result
             }
         }
+
+
+if __name__ == "__main__":
+    fake_event = {}
+    fake_context = None
+
+    response = lambda_handler(fake_event, fake_context)
+    print(response)

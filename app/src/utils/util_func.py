@@ -138,31 +138,31 @@ def print_backtest_results(table_rows: list) -> None:
     # Display latest portfolio summary
     if summary_rows:
         latest_summary = summary_rows[-1]
-        logger.debug(f"\n{Fore.WHITE}{Style.BRIGHT}PORTFOLIO SUMMARY:{Style.RESET_ALL}")
+        logger.info(f"\n{Fore.WHITE}{Style.BRIGHT}PORTFOLIO SUMMARY:{Style.RESET_ALL}")
 
         # Extract values and remove commas before converting to float
         cash_str = latest_summary[7].split("$")[1].split(Style.RESET_ALL)[0].replace(",", "")
         position_str = latest_summary[6].split("$")[1].split(Style.RESET_ALL)[0].replace(",", "")
         total_str = latest_summary[8].split("$")[1].split(Style.RESET_ALL)[0].replace(",", "")
 
-        logger.debug(f"Cash Balance: {Fore.CYAN}${float(cash_str):,.2f}{Style.RESET_ALL}")
-        logger.debug(f"Total Position Value: {Fore.YELLOW}${float(position_str):,.2f}{Style.RESET_ALL}")
-        logger.debug(f"Total Value: {Fore.WHITE}${float(total_str):,.2f}{Style.RESET_ALL}")
-        logger.debug(f"Return: {latest_summary[9]}")
+        logger.info(f"Cash Balance: {Fore.CYAN}${float(cash_str):,.2f}{Style.RESET_ALL}")
+        logger.info(f"Total Position Value: {Fore.YELLOW}${float(position_str):,.2f}{Style.RESET_ALL}")
+        logger.info(f"Total Value: {Fore.WHITE}${float(total_str):,.2f}{Style.RESET_ALL}")
+        logger.info(f"Return: {latest_summary[9]}")
 
         # Display performance metrics if available
         if latest_summary[10]:  # Sharpe ratio
-            logger.debug(f"Sharpe Ratio: {latest_summary[10]}")
+            logger.info(f"Sharpe Ratio: {latest_summary[10]}")
         if latest_summary[11]:  # Sortino ratio
-            logger.debug(f"Sortino Ratio: {latest_summary[11]}")
+            logger.info(f"Sortino Ratio: {latest_summary[11]}")
         if latest_summary[12]:  # Max drawdown
-            logger.debug(f"Max Drawdown: {latest_summary[12]}")
+            logger.info(f"Max Drawdown: {latest_summary[12]}")
 
     # Add vertical spacing
-    logger.debug("\n" * 2)
+    logger.info("\n" * 2)
 
     # Print the table with just ticker rows
-    logger.debug(
+    logger.info(
         tabulate(
             ticker_rows,
             headers=[
@@ -194,4 +194,4 @@ def print_backtest_results(table_rows: list) -> None:
     )
 
     # Add vertical spacing
-    logger.debug("\n" * 4)
+    logger.info("\n" * 4)
