@@ -8,8 +8,13 @@ from tabulate import tabulate
 import orjson
 from utils import QUANTITY_DECIMALS
 from src.utils.logger import setup_logger
+import re
 
 logger = setup_logger()
+ANSI_ESCAPE = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
+
+def strip_ansi(text):
+    return ANSI_ESCAPE.sub('', text)
 
 
 def import_strategy_class(strategies_path: str):
@@ -157,41 +162,43 @@ def print_backtest_results(table_rows: list) -> None:
             logger.info(f"Sortino Ratio: {latest_summary[11]}")
         if latest_summary[12]:  # Max drawdown
             logger.info(f"Max Drawdown: {latest_summary[12]}")
-
-    # Add vertical spacing
-    logger.info("\n" * 2)
+    
+    filtred_ticker_rows = [row for row in ticker_rows[:-1] if strip_ansi(row[2]).strip().upper() != "HOLD"]
+    filtred_ticker_rows.append(ticker_rows[-1])
 
     # Print the table with just ticker rows
-    logger.info(
-        tabulate(
-            ticker_rows,
-            headers=[
-                "Date",
-                "Ticker",
-                "Action",
-                "Quantity",
-                "Price",
-                "Shares",
-                "Position Value",
-                "Bullish",
-                "Bearish",
-                "Neutral",
-            ],
-            tablefmt="grid",
-            colalign=(
-                "left",  # Date
-                "left",  # Ticker
-                "center",  # Action
-                "right",  # Quantity
-                "right",  # Price
-                "right",  # Shares
-                "right",  # Position Value
-                "right",  # Bullish
-                "right",  # Bearish
-                "right",  # Neutral
-            ),
+    if len(filtred_ticker_rows) >= 1 :
+        
+        # Add vertical spacing
+        logger.info("\n" * 2)
+        
+        logger.info(
+            tabulate(
+                filtred_ticker_rows,
+                headers=[
+                    "Date",
+                    "Ticker",
+                    "Action",
+                    "Quantity",
+                    "Price",
+                    "Shares",
+                    "Position Value",
+                    "Bullish",
+                    "Bearish",
+                    "Neutral",
+                ],
+                tablefmt="grid",
+                colalign=(
+                    "left",  # Date
+                    "left",  # Ticker
+                    "center",  # Action
+                    "right",  # Quantity
+                    "right",  # Price
+                    "right",  # Shares
+                    "right",  # Position Value
+                    "right",  # Bullish
+                    "right",  # Bearish
+                    "right",  # Neutral
+                ),
+            )
         )
-    )
-
-    # Add vertical spacing
-    logger.info("\n" * 4)
