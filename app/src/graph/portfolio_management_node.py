@@ -11,6 +11,15 @@ from src.llm import get_azure_openai_client
 client = get_azure_openai_client() 
 logger = setup_logger()
 
+def load_and_render_prompt(path: str, variables: Dict[str, Any]) -> str:
+    with open(path, "r") as f:
+        template = f.read()
+    for key, value in variables.items():
+        if not isinstance(value, str):
+            value = json.dumps(value, indent=2)
+        template = template.replace(f"{{{{{key}}}}}", value)
+    return template
+
 
 class PortfolioManagementNode(BaseNode):
     def __call__(self, state: AgentState) -> Dict[str, Any]:
@@ -89,83 +98,18 @@ def generate_trading_decision(
     """Attempts to get a decision from the LLM with retry logic"""
     # Create the prompt template
     
-    system_prompt = """
-    You are a professional cryptocurrency portfolio manager operating in a 24/7, highly-volatile market.
-    Mandate
-    • Preserve capital and maximise risk-adjusted return (Sharpe, Sortino).  
-    • Keep 1-day 99 % Expected Shortfall under the configured limit.  
-    • Always respect exchange margin, position and notional caps.  
-    • Prefer liquid venues, low slippage routes and stable-coin settlement for cash-like exposure.  
-    • React swiftly to regime shifts (on-chain activity, funding spikes, liquidations, macro headlines).  
-    Think first, then answer ONLY with a valid JSON object.
+    prompt_vars = {
+        "signals_by_ticker": signals_by_ticker,
+        "current_prices": current_prices,
+        "portfolio_cash": f"{portfolio.get('available_USDC', 0.0):.2f}",
+        "available_margin_USDC": f"{portfolio.get('available_margin_USDC', 0.0):.2f}",
+        "portfolio_positions": portfolio.get("positions", {})
+    }
 
-    Inputs
-    • signals_by_ticker – dict ticker → signals  
-    • current_prices – dict ticker → price  
-    • max_shares – dict ticker → float  
-    • portfolio_cash – USDC available  
-    • portfolio_positions – current open positions (long & short)  
-    • margin_requirement – fraction for shorts
-
-    Available operations
-    • open_long   – open / add to a long position  
-    • open_short  – open / add to a short position  
-    • close_long  – close / reduce an existing long position  
-    • close_short – close / reduce an existing short position  
-    • hold        – no action
-
-    Rules
-    LONG
-    open_long: require cash and/or available margin  
-    close_long: only if a long exists; quantity ≤ current long size
-    SHORT
-    open_short: require available margin ((qty×price)×margin_requirement)  
-    close_short: only if a short exists; quantity ≤ current short size
-
-    Conviction score per ticker combines
-    • multi-time-frame consensus  
-    • signal confidence (higher resolution ⇒ higher weight)  
-    • momentum direction & strength  
-    • realised / implied vol, funding
-
-    Output JSON ONLY. No extra text.
+    prompt_path = os.path.join("app", "src", "prompts", "rule.txt")
+    user_prompt = load_and_render_prompt(prompt_path, prompt_vars)
     
-    """
-
-    user_prompt = f"""
-    signals_by_ticker:
-    {json.dumps(signals_by_ticker, indent=2)}
-
-    current_prices:
-    {json.dumps(current_prices, indent=2)}
-
-    portfolio_cash: {portfolio.get('available_USDC', 0.0):.2f}
-    
-    available_margin_USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}
-    
-    portfolio_positions:
-    {json.dumps(portfolio.get('positions', {}), indent=2)}
-
-        
-    • If no position exists and market shows a bearish or bullish shorterm signal, open_long or open_short with quantity*current_prices < [available_margin_USDC]
-    
-
-    # Output format (strict)
-    {{
-    "decisions": {{
-        "TICKER": {{
-        "operation": "open_long" | "open_short" | "close_long" | "close_short" | "hold",
-        "quantity": float,
-        "confidence": 0-100,
-        "reasoning": "string explaining the choice",
-        "side": "long" | "short"        # mandatory when operation != hold
-        }},
-        ...
-    }}
-    }}
-    """
-    
-    logger.debug(f"Prompting {user_prompt}")
+    logger.info(f"Prompting {user_prompt}")
     logger.debug(f"[ℹ️] Available USDC: {portfolio.get('available_USDC', 0.0):.2f} tickers...")
     logger.debug(f"[ℹ️] Available margin USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}")
     logger.debug(f"[ℹ️] Current prices: {current_prices}")
@@ -180,7 +124,6 @@ def generate_trading_decision(
         resp = client.chat.completions.create(
             model=model_name,
             messages=[
-                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
         )
