@@ -224,7 +224,7 @@ class Backtester:
 
             pos["quantity"] -= quantity
             
-            self.portfolio["available_USDC"] += cover_cost - pos["entry"] * quantity
+            self.portfolio["available_USDC"] +=  pos["entry"] * quantity - cover_cost 
             
             # borrowed
             self.portfolio["borrowed_USDC"] -= pos["borrowed_USDC"]
@@ -237,6 +237,8 @@ class Backtester:
             self.portfolio["equity"] = self.calculate_equity(current_price)
                 
             self.portfolio["available_margin_USDC"] = (self.portfolio["equity"])/ self.margin_requirement
+            
+            print (f"portfolio equity after close short: {self.portfolio['equity']:.2f}")
 
             return quantity
 

@@ -80,7 +80,7 @@ class BinanceDataProvider:
             end_date = datetime.now()
 
         # Create cache file path
-        cache_file = self.cache_dir / f"{formatted_symbol}_{timeframe}_{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}.csv"
+        cache_file = self.cache_dir / f"{formatted_symbol}_{timeframe}_{start_date.strftime('%Y%m%dT%H%M%S')}_{end_date.strftime('%Y%m%dT%H%M%S')}.csv"
 
         # Check if cache file exists and is fresh
         if use_cache and cache_file.exists():

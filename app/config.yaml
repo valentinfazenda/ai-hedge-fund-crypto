@@ -1,5 +1,5 @@
 mode: live
-start_date: 2025-05-23
+start_date: 2025-05-23T13:00:00 #YYYY-MM-DDTHH:MM:SS
 end_date: 2025-05-25
 primary_interval: 1m
 initial_cash: 100
