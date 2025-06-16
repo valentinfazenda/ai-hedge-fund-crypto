@@ -104,7 +104,7 @@ class Backtester:
         p["unrealized_pnl"] = pnl
 
     # main trade executor ------------------------------------------------
-    def execute_trade(self, symbol: str, operation: str, quantity: float, current_price: float, prices: Dict[str, float] = None):
+    def execute_trade(self, symbol: str, operation: str, quantity: float, current_price: float):
         """Executes a trade operation for the given symbol."""
         """If the quantity*price is higher than margin_requirement * available_USDC, it will not execute the trade and return an error."""
         
@@ -264,6 +264,26 @@ class Backtester:
 
         return equity
 
+    def calculate_reference_value(self, symbol: str, current_price: float):
+        if "reference_value" not in self.portfolio:
+            self.portfolio["reference_value"] = {}
+            
+        if symbol in self.portfolio["reference_value"]:
+            qty = self.portfolio["reference_value"][symbol]["quantity"]
+            price = qty * current_price
+            self.portfolio["reference_value"][symbol]["price"] = price
+            return price
+        else:
+            quantity = self.initial_capital / current_price
+            self.portfolio["reference_value"][symbol] = {
+                "quantity": quantity,
+                "price": current_price
+            }
+            return self.initial_capital
+            
+            return "tobeimplemented"  # Placeholder for future implementation
+    # ------------------------------------------------------------------
+
     def calculate_portfolio_value(self, prices: Dict[str, float]):
         value = self.portfolio["available_USDC"]
         for sym, pos in self.portfolio["positions"].items():
@@ -345,6 +365,7 @@ class Backtester:
             # valuation & exposures
             # -----------------------------------------------------------
             total_val = self.portfolio["equity"]
+            reference_val = self.calculate_reference_value(sym, prices[sym])
             long_exp = sum(pos["quantity"] * prices[sym] for sym, pos in self.portfolio["positions"].items() if pos["side"] == "long")
             short_exp = sum(pos["quantity"] * prices[sym] for sym, pos in self.portfolio["positions"].items() if pos["side"] == "short")
             gross_exp = long_exp + short_exp
@@ -353,6 +374,7 @@ class Backtester:
 
             self.portfolio_values.append({
                 "Date": current_time,
+                "Reference Value": reference_val,
                 "Portfolio Value": total_val,
                 "Long Exposure": long_exp,
                 "Short Exposure": short_exp,
@@ -411,6 +433,7 @@ class Backtester:
                     total_value=total_val,
                     return_pct=port_return,
                     cash_balance=self.portfolio["available_USDC"],
+                    
                     total_position_value=self.portfolio["equity"] - self.portfolio["available_USDC"],
                     sharpe_ratio=metrics["sharpe_ratio"],
                     sortino_ratio=metrics["sortino_ratio"],
@@ -470,7 +493,10 @@ class Backtester:
         logger.debug(f"Total Return: {Fore.GREEN if tot_ret >= 0 else Fore.RED}{tot_ret:.2f}%{Style.RESET_ALL}")
         plt.figure(figsize=(12, 6))
         plt.plot(df.index, df["Portfolio Value"], label="Equity")
-        plt.title("Equity Curve")
+        
+        if "Reference Value" in df.columns:
+            plt.plot(df.index, df["Reference Value"], label="Reference", linestyle="--")
+        plt.title("Equity Curve vs Reference")
         plt.ylabel("Portfolio Value ($)")
         plt.xlabel("Date")
         plt.grid(True)
