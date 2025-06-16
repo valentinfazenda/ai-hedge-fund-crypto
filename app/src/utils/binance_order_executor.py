@@ -54,10 +54,10 @@ def place_binance_order(
 
     if operation == "hold":
         logger.info(f"[SKIP] {symbol} HOLD – no action.")
-        return (f"[SKIP] {symbol} HOLD – no action.")
+        return f"[SKIP] {symbol} HOLD – no action."
     if qty <= 0:
         logger.warning(f"[SKIP] {symbol} {operation.upper()} – qty too low.")
-        return (f"[SKIP] {symbol} {operation.upper()} – qty too low.")
+        return f"[SKIP] {symbol} {operation.upper()} – qty too low."
 
     op_map = {
         "open_long":  ("BUY",  "MARGIN_BUY"),
@@ -67,7 +67,19 @@ def place_binance_order(
     }
     if operation not in op_map:
         logger.error(f"[❓] Unknown operation '{operation}' for {symbol}.")
-        return (f"[❓] Unknown operation '{operation}' for {symbol}.")
+        return f"[❓] Unknown operation '{operation}' for {symbol}."
+
+    # Auto-adjust quantity on close ops to prevent leftover dust
+    if operation.startswith("close_"):
+        # Auto-determine full position quantity if not provided
+        pos = get_binance_margin_positions()
+        for p in pos:
+            if p["symbol"] == symbol:
+                if (operation == "close_long" and p["side"] == "long") or \
+                   (operation == "close_short" and p["side"] == "short"):
+                    quantity = p["quantity"]
+                    break
+    qty = adjust_quantity_margin(symbol, quantity)
 
     side, effect = op_map[operation]
     try:
@@ -116,6 +128,11 @@ def get_binance_margin_positions():
             free = float(a["free"])
             borrowed = float(a["borrowed"])
             if free == borrowed == 0:
+                continue
+            
+            # Skip negligible positions
+            if abs(free) < 1e-4 and abs(borrowed) < 1e-4:
+                logger.debug(f"[ℹ️] Skipping negligible position: {asset} (free: {free}, borrowed: {borrowed})")
                 continue
 
             symbol = f"{asset}USDC"
