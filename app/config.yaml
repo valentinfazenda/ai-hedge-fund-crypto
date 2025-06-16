@@ -1,12 +1,12 @@
 mode: live
 start_date: 2025-05-23
-end_date: 2025-05-24
-primary_interval: 3m
+end_date: 2025-05-25
+primary_interval: 1m
 initial_cash: 100
 margin_requirement: 0.2
 show_reasoning: false
 show_agent_graph: false
 signals:
-  intervals: ["30m","15m","5m","3m"]
+  intervals: ["15m","5m","3m","1m"]
   tickers: ["ETHUSDC"]
   strategies: ['MacdStrategy', "RSIStrategy"]

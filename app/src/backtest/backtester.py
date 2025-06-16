@@ -109,10 +109,9 @@ class Backtester:
         """If the quantity*price is higher than margin_requirement * available_USDC, it will not execute the trade and return an error."""
         
         
-        FEE = 0.001
-        if quantity <= 0.0 or operation == "hold":
-            return 0.0
-        quantity = round(float(quantity), QUANTITY_DECIMALS)
+        if operation == "hold":
+            if symbol in self.portfolio["positions"]:
+                self._update_pnl(symbol, current_price)
 
         positions = self.portfolio["positions"]
         pos = positions.get(symbol)
@@ -124,20 +123,18 @@ class Backtester:
         # open long ------------------------------------------------------
         if operation == "open_long":
             
-            cost = quantity * current_price * (1 + FEE)
+            cost = quantity * current_price
             
             if cost > margin_available:
-                raise ValueError(
-                    f"Trade size exceeds margin requirement: {quantity*current_price} > {self.portfolio['available_USDC'] / self.margin_requirement}"
-                )
+                logger.error(f"Trade size exceeds margin requirement: {quantity*current_price} > {margin_available}")
+                cost = margin_available
+                quantity = cost / current_price
 
-            if not pos:
-                self._ensure_position_node(symbol, "long", 0.0, current_price)
-                pos = positions[symbol]
-            # vwap update
-            new_qty = pos["quantity"] + quantity
-            pos["entry"] = (pos["entry"] * pos["quantity"] + current_price * quantity) / new_qty
-            pos["quantity"] = new_qty
+            self._ensure_position_node(symbol, "long", 0.0, current_price)
+            pos = positions[symbol]
+            # vwap updatety
+            pos["entry"] = (pos["entry"] * pos["quantity"] + current_price * quantity) / quantity
+            pos["quantity"] = quantity
             
             if self.portfolio["available_USDC"] < cost: # if not enough cash, borrow
                 
@@ -157,7 +154,7 @@ class Backtester:
                 self.portfolio["available_margin_USDC"] = (self.portfolio["equity"])/ self.margin_requirement
                 
             self._update_pnl(symbol, current_price)
-            
+
             return quantity
 
         # close long -----------------------------------------------------
@@ -176,8 +173,7 @@ class Backtester:
                 
                 self.portfolio["available_USDC"] += proceeds - borrowed
                 
-                if pos["quantity"] == 0:
-                    positions.pop(symbol)
+                positions.pop(symbol)
                 
                 self.portfolio["equity"] = self.calculate_equity(current_price)
                 
@@ -186,11 +182,14 @@ class Backtester:
             else:
                 # Add remaining cash to available USDC
                 self.portfolio["available_USDC"] += proceeds
-                self.portfolio["available_margin_USDC"] = self.portfolio["available_USDC"]/ self.margin_requirement
-                if pos["quantity"] == 0:
-                    positions.pop(symbol)
-                else:
-                    self._update_pnl(symbol, current_price)
+                
+                positions.pop(symbol)
+                
+                self.portfolio["equity"] = self.calculate_equity(current_price)
+                self.portfolio["available_margin_USDC"] = (self.portfolio["equity"])/ self.margin_requirement
+
+                
+            
             return sell_qty
 
         # open short -----------------------------------------------------
@@ -198,9 +197,9 @@ class Backtester:
             proceeds = quantity * current_price
             
             if proceeds > margin_available:
-                raise ValueError(
-                    f"Trade size exceeds margin requirement: {quantity*current_price} > {margin_available}"
-                )
+                logger.error(f"Trade size exceeds margin requirement: {quantity*current_price} > {margin_available}")
+                proceeds = margin_available
+                quantity = proceeds / current_price
                 
             if not pos:
                 self._ensure_position_node(symbol, "short", 0.0, current_price)
@@ -260,8 +259,6 @@ class Backtester:
             else:
                 equity += pos["quantity"]*pos["entry"] - pos["quantity"] * price + self.portfolio.get("borrowed_USDC", 0.0)
                 logger.debug(f"Short position {sym} PnL: {(pos['entry'] - price) * pos['quantity']:.2f}")
-        logger.debug (f"Equity calculated: {equity:.2f} (available_USDC: {self.portfolio['available_USDC']:.2f}, borrowed_USDC: {borrowed_USDC:.2f})")
-        logger.debug (f"Positions: {self.portfolio['positions']}")
 
         return equity
 
@@ -340,12 +337,12 @@ class Backtester:
             for sym in self.tickers:
                 dec = decisions.get(sym, {"operation": "hold", "quantity": 0.0})
                 executed[sym] = self.execute_trade(sym, dec.get("operation", "hold"), dec.get("quantity", 0.0), prices[sym])
-                self.calculate_equity(prices[sym])  # update equity after each trade
+                self.portfolio["equity"] = self.calculate_equity(prices[sym])  # update equity after each trade
 
             # -----------------------------------------------------------
             # valuation & exposures
             # -----------------------------------------------------------
-            total_val = self.calculate_portfolio_value(prices)
+            total_val = self.portfolio["equity"]
             long_exp = sum(pos["quantity"] * prices[sym] for sym, pos in self.portfolio["positions"].items() if pos["side"] == "long")
             short_exp = sum(pos["quantity"] * prices[sym] for sym, pos in self.portfolio["positions"].items() if pos["side"] == "short")
             gross_exp = long_exp + short_exp
@@ -412,7 +409,7 @@ class Backtester:
                     total_value=total_val,
                     return_pct=port_return,
                     cash_balance=self.portfolio["available_USDC"],
-                    total_position_value=total_val - self.portfolio["available_USDC"],
+                    total_position_value=self.portfolio["equity"] - self.portfolio["available_USDC"],
                     sharpe_ratio=metrics["sharpe_ratio"],
                     sortino_ratio=metrics["sortino_ratio"],
                     max_drawdown=metrics["max_drawdown"],

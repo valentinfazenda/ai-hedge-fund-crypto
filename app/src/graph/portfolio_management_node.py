@@ -6,13 +6,16 @@ from src.utils.logger import setup_logger
 from .base_node import BaseNode, AgentState
 from graph import show_agent_reasoning
 from src.llm import get_azure_openai_client
+from pathlib import Path
 
 
 client = get_azure_openai_client() 
 logger = setup_logger()
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 def load_and_render_prompt(path: str, variables: Dict[str, Any]) -> str:
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f: 
         template = f.read()
     for key, value in variables.items():
         if not isinstance(value, str):
@@ -106,10 +109,10 @@ def generate_trading_decision(
         "portfolio_positions": portfolio.get("positions", {})
     }
 
-    prompt_path = os.path.join("app", "src", "prompts", "rule.txt")
+    prompt_path = BASE_DIR / "prompts" / "rule.txt"
     user_prompt = load_and_render_prompt(prompt_path, prompt_vars)
     
-    logger.info(f"Prompting {user_prompt}")
+    logger.debug(f"Prompting {user_prompt}")
     logger.debug(f"[ℹ️] Available USDC: {portfolio.get('available_USDC', 0.0):.2f} tickers...")
     logger.debug(f"[ℹ️] Available margin USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}")
     logger.debug(f"[ℹ️] Current prices: {current_prices}")
@@ -138,7 +141,7 @@ def generate_trading_decision(
             continue
 
         decisions = data.get("decisions")
-        logger.debug (f"Attempt {attempt}: decisions = {decisions}")
+        logger.info (f"Attempt {attempt}: decisions = {decisions}")
         if not isinstance(decisions, dict):
             logger.warning(f"⚠️ Attempt {attempt}: 'decisions' missing or not a dict")
             continue
