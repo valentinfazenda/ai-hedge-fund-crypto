@@ -3,10 +3,12 @@ from typing import Dict, Any, List
 import json
 from langchain_core.messages import HumanMessage
 from src.utils.logger import setup_logger
+from src.utils.binance_chart_provider import get_chart
 from .base_node import BaseNode, AgentState
 from graph import show_agent_reasoning
 from src.llm import get_azure_openai_client
 from pathlib import Path
+from datetime import datetime
 
 
 client = get_azure_openai_client() 
@@ -32,6 +34,7 @@ class PortfolioManagementNode(BaseNode):
         data['name'] = "PortfolioManagementNode"
         # Get the portfolio and analyst signals
         portfolio = data.get("portfolio", {})
+        end_date = data.get("end_date")
         analyst_signals = data.get("analyst_signals", {})
         tickers = data.get("tickers", [])
 
@@ -66,6 +69,7 @@ class PortfolioManagementNode(BaseNode):
             tickers=tickers,
             signals_by_ticker=signals_by_ticker,
             current_prices=current_prices,
+            end_date=end_date,
             max_shares=max_shares,
             portfolio=portfolio,
             model_name=state["metadata"]["model_name"],
@@ -94,6 +98,7 @@ def generate_trading_decision(
         tickers: List[str],
         signals_by_ticker: Dict[str, Dict[str, Any]],
         current_prices: Dict[str, float],
+        end_date: datetime,
         max_shares: Dict[str, float],
         portfolio: Dict[str, float],
         model_name: str,
@@ -111,7 +116,9 @@ def generate_trading_decision(
 
     prompt_path = BASE_DIR / "prompts" / "rule.txt"
     user_prompt = load_and_render_prompt(prompt_path, prompt_vars)
-    
+    end_date_ts = int(end_date.timestamp() * 1000)
+    symbol_chart_base64 = get_chart("ETHUSDC", "1m", end_date_ts)
+
     logger.debug(f"Prompting {user_prompt}")
     logger.debug(f"[ℹ️] Available USDC: {portfolio.get('available_USDC', 0.0):.2f} tickers...")
     logger.debug(f"[ℹ️] Available margin USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}")
@@ -127,7 +134,17 @@ def generate_trading_decision(
         resp = client.chat.completions.create(
             model=model_name,
             messages=[
-                {"role": "user", "content": user_prompt},
+                {"role": "user", 
+                    "content": [
+                        {"type": "text", "text": user_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": "data:image/png;base64," + symbol_chart_base64
+                            },
+                        },
+                    ],
+                },
             ],
         )
         content = resp.choices[0].message.content.replace("```json", "").replace("```", "").strip()

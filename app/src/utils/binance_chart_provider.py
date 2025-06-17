@@ -5,13 +5,11 @@ import base64
 import matplotlib.pyplot as plt
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 import matplotlib.pyplot as plt
-from src.utils.logger import setup_logger
 from dotenv import load_dotenv
 
-import argparse, os, datetime as dt, pandas as pd, numpy as np, mplfinance as mpf
+import os, datetime as dt, pandas as pd, numpy as np, mplfinance as mpf
 from binance.client import Client
 
-logger = setup_logger()
 load_dotenv()
 
 client = Client(
@@ -21,7 +19,7 @@ client = Client(
 )
 
 def fetch_klines(client, symbol, interval, end_date=None):
-    data = client.get_klines(symbol=symbol, interval=interval, limit=100, endTime=end_date)
+    data = client.get_klines(symbol=symbol, interval=interval, limit=60, endTime=end_date)
     df = pd.DataFrame(data, columns=['time','open','high','low','close','volume','close_time','qav','trades','tbbav','tbqav','ignore'])
     df['time'] = pd.to_datetime(df['time'], unit='ms')
     df.set_index('time', inplace=True)
@@ -135,11 +133,17 @@ def plot_chart(df, symbol, interval):
 
     img_base64 = base64.b64encode(buf.read()).decode('utf-8')
 
-    plt.imshow(plt.imread(io.BytesIO(base64.b64decode(img_base64))))
-    plt.axis('off')
-    plt.show()
+    # plt.imshow(plt.imread(io.BytesIO(base64.b64decode(img_base64))))
+    # plt.axis('off')
+    # plt.show()
     
     return img_base64
+
+def get_chart(symbol, interval, end_date=None):
+    df = fetch_klines(client, symbol, interval, end_date)
+    df = add_indicators(df)
+    
+    return  plot_chart(df, symbol, interval)
 
 
 if __name__ == '__main__':
