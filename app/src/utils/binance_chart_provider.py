@@ -1,13 +1,19 @@
 import os
-import sys
 import io
+import sys
 import base64
-import matplotlib.pyplot as plt
-sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
-import matplotlib.pyplot as plt
-from dotenv import load_dotenv
+import datetime as dt
+import pandas as pd
+import numpy as np
 
-import os, datetime as dt, pandas as pd, numpy as np, mplfinance as mpf
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+
+import matplotlib
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
+import mplfinance as mpf
+from dotenv import load_dotenv
 from binance.client import Client
 
 load_dotenv()
