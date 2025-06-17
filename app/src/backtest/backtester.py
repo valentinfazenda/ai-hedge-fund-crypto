@@ -108,6 +108,7 @@ class Backtester:
         """Executes a trade operation for the given symbol."""
         """If the quantity*price is higher than margin_requirement * available_USDC, it will not execute the trade and return an error."""
         
+        FEES = 0.001  # 0.1% trading fee
         
         if operation == "hold":
             if symbol in self.portfolio["positions"]:
@@ -123,7 +124,7 @@ class Backtester:
         # open long ------------------------------------------------------
         if operation == "open_long":
             
-            cost = quantity * current_price
+            cost = quantity * current_price + quantity * current_price * FEES
             
             if cost > margin_available:
                 logger.error(f"Trade size exceeds margin requirement: {quantity*current_price} > {margin_available}")
@@ -194,7 +195,7 @@ class Backtester:
 
         # open short -----------------------------------------------------
         if operation == "open_short":
-            proceeds = quantity * current_price
+            proceeds = quantity * current_price + quantity * current_price * FEES
             
             if proceeds > margin_available:
                 logger.error(f"Trade size exceeds margin requirement: {quantity*current_price} > {margin_available}")
