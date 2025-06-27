@@ -9,6 +9,8 @@ from graph import show_agent_reasoning
 from src.llm import get_azure_openai_client
 from pathlib import Path
 from datetime import datetime
+import base64
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 client = get_azure_openai_client() 
@@ -114,12 +116,20 @@ def generate_trading_decision(
         "portfolio_positions": portfolio.get("positions", {})
     }
 
-    prompt_path = BASE_DIR / "prompts" / "rule.txt"
-    user_prompt = load_and_render_prompt(prompt_path, prompt_vars)
+    prompt_path_blue_black = BASE_DIR / "prompts" / "rule_blue_black.txt"
+    user_prompt_blue_black = load_and_render_prompt(prompt_path_blue_black, prompt_vars)
+    
+    prompt_path_green_red = BASE_DIR / "prompts" / "rule_green_red.txt"
+    user_prompt_green_red = load_and_render_prompt(prompt_path_green_red, prompt_vars)
+    
+    
     end_date_ts = int(end_date.timestamp() * 1000)
-    symbol_chart_base64 = get_chart("ETHUSDC", "1m", end_date_ts)
+    symbol_chart_base64_1m_blue_black = get_chart("ETHUSDC", "1m", ["#011AFF", "#000000"], 240, end_date_ts)
+    symbol_chart_base64_5m_blue_black = get_chart("ETHUSDC", "5m", ["#011AFF", "#000000"], 60, end_date_ts)
+    
+    symbol_chart_base64_1m_green_red = get_chart("ETHUSDC", "1m", ["#1FFF01", "#FF0000"], 240, end_date_ts)
+    symbol_chart_base64_5m_green_red = get_chart("ETHUSDC", "5m",  ["#1FFF01", "#FF0000"], 60, end_date_ts)
 
-    logger.debug(f"Prompting {user_prompt}")
     logger.debug(f"[ℹ️] Available USDC: {portfolio.get('available_USDC', 0.0):.2f} tickers...")
     logger.debug(f"[ℹ️] Available margin USDC: {portfolio.get('available_margin_USDC', 0.0):.2f}")
     logger.debug(f"[ℹ️] Current prices: {current_prices}")
@@ -128,52 +138,86 @@ def generate_trading_decision(
    
     
     max_retries = 10
-    valid_ops = {"open_long", "close_long", "open_short", "close_short", "hold"}
-
-    for attempt in range(1, max_retries + 1):
-        resp = client.chat.completions.create(
-            model=model_name,
-            messages=[
+    
+    def _call_llm(user_prompt, symbol_chart_base64_1m, symbol_chart_base64_5m):
+        for attempt in range(1, max_retries + 1):
+            resp = client.chat.completions.create(
+                model=model_name,
+                messages=[
                 {"role": "user", 
                     "content": [
                         {"type": "text", "text": user_prompt},
+                        {"type": "text", "text": "Candlestick chart in 1-minute intervals for ETHUSDC. Includes Bollinger Bands (Upper, Mid, Lower), short-term moving averages (MA5, MA10), volume bars, MACD with signal line and histogram, and multi-period RSI (6, 12, 24):"},
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": "data:image/png;base64," + symbol_chart_base64
+                                "url": "data:image/png;base64," + symbol_chart_base64_1m
+                            },
+                        },
+                        {"type": "text", "text": "Candlestick chart in 5-minute intervals for ETHUSDC. Includes Bollinger Bands (Upper, Mid, Lower), short-term moving averages (MA5, MA10), volume bars, MACD with signal line and histogram, and multi-period RSI (6, 12, 24):"},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": "data:image/png;base64," + symbol_chart_base64_5m
                             },
                         },
                     ],
                 },
             ],
         )
-        content = resp.choices[0].message.content.replace("```json", "").replace("```", "").strip()
-        if not content:
-            logger.warning(f"⚠️ Attempt {attempt}: Empty response")
-            continue
-        try:
-            data = json.loads(content)
-        except json.JSONDecodeError:
-            logger.warning(f"⚠️ Attempt {attempt}: Invalid JSON\n{content}")
-            continue
-
-        decisions = data.get("decisions")
-        logger.info (f"Attempt {attempt}: decisions = {decisions}")
-        if not isinstance(decisions, dict):
-            logger.warning(f"⚠️ Attempt {attempt}: 'decisions' missing or not a dict")
-            continue
-
-        def _valid(d):
-            return (
-                isinstance(d, dict)
-                and d.get("operation") in valid_ops
+            content = resp.choices[0].message.content.replace("```json", "").replace("```", "").strip()
+            if not content:
+                continue
+            try:
+                data = json.loads(content)
+            except json.JSONDecodeError:
+                continue
+            decisions = data.get("decisions")
+            if not isinstance(decisions, dict):
+                continue
+            d = decisions.get("ETHUSDC", {})
+            if (
+                d.get("operation") in {"open_long", "close_long", "open_short", "close_short", "hold"}
                 and isinstance(d.get("quantity"), (int, float))
                 and isinstance(d.get("confidence"), (int, float))
-            )
+            ):
+                return data
+        return None
+    
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(_call_llm, user_prompt_blue_black, symbol_chart_base64_1m_blue_black, symbol_chart_base64_5m_blue_black),
+            executor.submit(_call_llm, user_prompt_green_red, symbol_chart_base64_1m_green_red, symbol_chart_base64_5m_green_red),
+        ]
+        
+        results = [f.result() for f in as_completed(futures)]
+    results = [r for r in results if r and "ETHUSDC" in r.get("decisions", {})]
+    if len(results) < 2:
+        raise ValueError("❌ Less than two valid LLM responses received.")
 
-        if all(_valid(v) for v in decisions.values()):
-            return data
+    d1 = results[0]["decisions"]["ETHUSDC"]
+    d2 = results[1]["decisions"]["ETHUSDC"]
 
-        logger.error(f"⚠️ Attempt {attempt}: Malformed decisions\n{decisions}")
+    if d1["operation"] == d2["operation"]:
+        best = results[0] if d1["quantity"] >= d2["quantity"] else results[1]
+    else:
+        results[0]["decisions"]["ETHUSDC"]["operation"] = "hold"
+        best = results[0]
 
-    raise ValueError("❌ No valid response from LLM after multiple retries.")
+    if best["decisions"]["ETHUSDC"]["operation"] != "hold":
+        output_dir = BASE_DIR / "output"
+        output_dir.mkdir(exist_ok=True)
+        for tf in ["1m", "5m"]:
+            fname_green_red = output_dir / f"graph_{tf}_{end_date.strftime('%Y%m%d_%H%M%S')}_{best["decisions"]["ETHUSDC"]["operation"]}_green_red.png"
+            with open(fname_green_red, "wb") as f:
+                b64 = symbol_chart_base64_1m_green_red if tf == "1m" else symbol_chart_base64_5m_green_red
+                f.write(base64.b64decode(b64))
+            fname_blue_black = output_dir / f"graph_{tf}_{end_date.strftime('%Y%m%d_%H%M%S')}_{best["decisions"]["ETHUSDC"]["operation"]}_blue_black.png"
+            with open(fname_blue_black, "wb") as f:
+                b64 = symbol_chart_base64_1m_blue_black if tf == "1m" else symbol_chart_base64_5m_blue_black
+                f.write(base64.b64decode(b64))
+        fname = output_dir / f"decisions_{end_date.strftime('%Y%m%d_%H%M%S')}_{best["decisions"]["ETHUSDC"]["operation"]}.txt"
+        with open(fname, "w") as f:
+            json.dump(best["decisions"], f)
+
+    return best

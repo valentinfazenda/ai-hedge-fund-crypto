@@ -24,8 +24,8 @@ client = Client(
     tld="com",
 )
 
-def fetch_klines(client, symbol, interval, end_date=None):
-    data = client.get_klines(symbol=symbol, interval=interval, limit=60, endTime=end_date)
+def fetch_klines(client, symbol, interval, limit = None, end_date=None):
+    data = client.get_klines(symbol=symbol, interval=interval, limit=limit, endTime=end_date)
     df = pd.DataFrame(data, columns=['time','open','high','low','close','volume','close_time','qav','trades','tbbav','tbqav','ignore'])
     df['time'] = pd.to_datetime(df['time'], unit='ms')
     df.set_index('time', inplace=True)
@@ -66,10 +66,10 @@ def add_indicators(df):
     df['MACD'], df['MACD_signal'], df['MACD_hist'] = macd(df['close'])
     return df
 
-def plot_chart(df, symbol, interval):
+def plot_chart(df, symbol, interval, colors):
     last_price = df['close'].iloc[-1]
     title = f'{symbol} - {interval} | Last: {last_price:.2f}'
-    mc = mpf.make_marketcolors(up='#26A69A', down="#E9615F", inherit=True)
+    mc = mpf.make_marketcolors(up=colors[0], down=colors[1], inherit=True)
     style = mpf.make_mpf_style(
     base_mpf_style='classic',
     marketcolors=mc,
@@ -145,11 +145,11 @@ def plot_chart(df, symbol, interval):
     
     return img_base64
 
-def get_chart(symbol, interval, end_date=None):
-    df = fetch_klines(client, symbol, interval, end_date)
+def get_chart(symbol, interval, colors, limit = None, end_date=None):
+    df = fetch_klines(client, symbol, interval, limit, end_date)
     df = add_indicators(df)
     
-    return  plot_chart(df, symbol, interval)
+    return  plot_chart(df, symbol, interval, colors)
 
 
 if __name__ == '__main__':

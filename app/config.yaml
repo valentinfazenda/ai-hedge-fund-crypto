@@ -1,6 +1,6 @@
 mode: live
-start_date: 2025-05-23T13:00:00 #YYYY-MM-DDTHH:MM:SS
-end_date: 2025-05-25
+start_date: 2025-06-19T04:35:00 #YYYY-MM-DDTHH:MM:SS
+end_date: 2025-06-21T10:00:00 #YYYY-MM-DDTHH:MM:SS
 primary_interval: 1m
 initial_cash: 100
 margin_requirement: 0.2
